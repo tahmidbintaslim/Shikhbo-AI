@@ -1,697 +1,441 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-import { useChat } from "@/hooks/useChat";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
-import rehypeSanitize from "rehype-sanitize";
-import rehypeHighlight from "rehype-highlight";
-import "highlight.js/styles/github-dark.css";
-import { Card, CardBody, CardHeader, CardFooter } from "@heroui/card";
-import { Button } from "@heroui/button";
-import { Autocomplete, AutocompleteItem } from "@heroui/autocomplete";
-import { Textarea } from "@heroui/input";
-import { Avatar } from "@heroui/avatar";
-import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownSection,
-  DropdownItem,
-} from "@heroui/dropdown";
-import { Divider } from "@heroui/divider";
-import { Spinner } from "@heroui/spinner";
-import { Chip } from "@heroui/chip";
-import { Spacer } from "@heroui/spacer";
-import { Image } from "@heroui/image";
-import {
-  Volume2,
-  StopCircle,
-  Send,
-  Bot,
-  User,
-  Mic,
-  MicOff,
-  Settings,
-  Sun,
-  Moon,
-  Globe,
-} from "lucide-react";
-import { useTheme } from "next-themes";
+import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
+import { useChat } from "@/hooks/useChat";
+import CONTENT, { SUBJECTS } from "@/data/landing-content";
+import { SimpleFooter } from "@/components/SimpleFooter";
+import { Card, CardBody } from "@heroui/card";
+import { Button } from "@heroui/button";
+import { Select, SelectItem } from "@heroui/select";
+import {
+  Chip,
+  Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+} from "@heroui/react";
+import { useTheme } from "next-themes";
+import ChatAutoMount from "@/components/ChatAutoMount";
+import "./globals.css";
 
-// ... (Interface, Type, and SpeechRecognition declaration remain the same) ...
+// START: Icons and ThemeSwitcher
+const MoonIcon = (props: any) => (
+  <svg
+    aria-hidden="true"
+    focusable="false"
+    height="1em"
+    role="presentation"
+    viewBox="0 0 24 24"
+    width="1em"
+    {...props}
+  >
+    <path
+      d="M21.53 15.93c-.16-.27-.61-.69-1.73-.49a8.46 8.46 0 01-1.88.13 8.409 8.409 0 01-5.91-2.82 8.068 8.068 0 01-1.44-8.66c.44-1.01.13-1.54-.09-1.76s-.77-.55-1.83-.11a10.318 10.318 0 00-6.32 10.21 10.475 10.475 0 007.04 8.99 10 10 0 002.89.55c.16.01.32.02.48.02a10.5 10.5 0 008.47-4.27c.67-.93.49-1.519.32-1.79z"
+      fill="currentColor"
+    />
+  </svg>
+);
+
+const SunIcon = (props: any) => (
+  <svg
+    aria-hidden="true"
+    focusable="false"
+    height="1em"
+    role="presentation"
+    viewBox="0 0 24 24"
+    width="1em"
+    {...props}
+  >
+    <g fill="currentColor">
+      <path d="M19 12a7 7 0 11-7-7 7 7 0 017 7z" />
+      <path d="M12 22.96a.969.969 0 01-1-.96v-.08a1 1 0 012 0 1.038 1.038 0 01-1 1.04zm7.14-2.82a1.024 1.024 0 01-.71-.29l-.13-.13a1 1 0 011.41-1.41l.13.13a1 1 0 010 1.41.984.984 0 01-.7.29zm-14.28 0a1.024 1.024 0 01-.71-.29 1 1 0 010-1.41l.13-.13a1 1 0 011.41 1.41l-.13.13a1 1 0 01-.7.29zM22 13h-.08a1 1 0 010-2 1.038 1.038 0 011.04 1 .969.969 0 01-.96 1zM2.08 13H2a1 1 0 010-2 1.038 1.038 0 011.04 1 .969.969 0 01-.96 1zm16.93-7.01a1.024 1.024 0 01-.71-.29 1 1 0 010-1.41l.13-.13a1 1 0 011.41 1.41l-.13.13a.984.984 0 01-.7.29zm-14.02 0a1.024 1.024 0 01-.71-.29l-.13-.14a1 1 0 011.41-1.41l.13.13a1 1 0 010 1.41.97.97 0 01-.7.3zM12 3.04a.969.969 0 01-1-.96V2a1 1 0 012 0 1.038 1.038 0 01-1 1.04z" />
+    </g>
+  </svg>
+);
+
+function ThemeSwitcher() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) return null;
+
+  return (
+    <Switch
+      isSelected={theme === "dark"}
+      onValueChange={(isSelected) => setTheme(isSelected ? "dark" : "light")}
+      aria-label="Toggle color theme"
+      size="md"
+      color="secondary"
+      thumbIcon={({ isSelected, className }) =>
+        isSelected ? (
+          <MoonIcon className={className} />
+        ) : (
+          <SunIcon className={className} />
+        )
+      }
+    />
+  );
+}
+// END: Icons and ThemeSwitcher
 
 type Locale = "en" | "bn";
 
-const translations = {
-  en: {
-    title: "Shikhbo AI",
-    subtitle: "Your Virtual Tutor",
-    classPlaceholder: "Class",
-    thinking: "Thinking...",
-    inputPlaceholder: "Ask anything...",
-    fetchError: "Error connecting to the teacher bot.",
-    apiError: "Sorry, I couldn't find an answer.",
-    language: "Language",
-    theme: "Theme",
-    light: "Light",
-    dark: "Dark",
-  },
-  bn: {
-    title: "শিখবো এআই",
-    subtitle: "তোমার ভার্চুয়াল গৃহশিক্ষক",
-    classPlaceholder: "ক্লাস",
-    thinking: "চিন্তা করছি...",
-    inputPlaceholder: "কিছু জিজ্ঞাসা করুন...",
-    fetchError: "শিক্ষক বট সংযোগ করতে ত্রুটি হয়েছে।",
-    apiError: "দুঃখিত, আমি উত্তরটি খুঁজে পাচ্ছি না।",
-    language: "ভাষা",
-    theme: "থিম",
-    light: "লাইট",
-    dark: "ডার্ক",
-  },
-};
+function ComparisonTable({ t, locale }: { t: any; locale: Locale }) {
+  const criteriaLabel = locale === "bn" ? "মানদণ্ড" : "Criteria";
+  const privateLabel =
+    t?.compare?.private ??
+    (locale === "bn" ? "প্রাইভেট টিউটর" : "Private Tutor");
+  const usLabel = t?.compare?.us ?? "Shikhbo AI";
+  const rows = t?.compare?.points || [];
+  const columns = [
+    { name: criteriaLabel, uid: "criteria" },
+    { name: privateLabel, uid: "private" },
+    { name: usLabel, uid: "us" },
+  ];
 
-declare global {
-  interface Window {
-    SpeechRecognition: any;
-    webkitSpeechRecognition: any;
-  }
-}
-
-export default function StudentBot() {
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [speakingMessage, setSpeakingMessage] = useState<string | null>(null);
-  const [locale, setLocale] = useState<Locale>("en");
-  const [isListening, setIsListening] = useState(false);
-
-  const {
-    messages,
-    input,
-    setInput,
-    loading,
-    grade,
-    setGrade,
-    scrollRef,
-    sendMessage,
-  } = useChat(locale);
-  const recognitionRef = useRef<any>(null);
-  const { theme, setTheme } = useTheme();
-
-  // ... (useEffect for scrolling, speak, stopSpeaking, STT, and handleSend remain the same) ...
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  const renderCell = useCallback((row: any, columnKey: React.Key) => {
+    switch (columnKey) {
+      case "criteria":
+        return (
+          <div className="text-xs uppercase tracking-widest text-default-500 dark:text-default-400">
+            {row.label}
+          </div>
+        );
+      case "private":
+        return (
+          <div className="text-default-600 dark:text-default-300">{row.p}</div>
+        );
+      case "us":
+        return (
+          <Chip
+            color="primary"
+            variant="flat"
+            className="text-sm font-semibold"
+          >
+            {row.u}
+          </Chip>
+        );
+      default:
+        return row.label;
     }
-  }, [messages]);
-
-  const speak = (content: string) => {
-    if (isSpeaking) window.speechSynthesis.cancel();
-    setSpeakingMessage(content);
-    const utterance = new SpeechSynthesisUtterance(content);
-    const voices = window.speechSynthesis.getVoices();
-    const bengaliVoice = voices.find(
-      (v) => v.lang.includes("bn-BD") || v.lang.includes("bn-IN"),
-    );
-    if (bengaliVoice) utterance.voice = bengaliVoice;
-    utterance.lang = "bn-BD";
-    utterance.rate = 0.9;
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => {
-      setIsSpeaking(false);
-      setSpeakingMessage(null);
-    };
-    window.speechSynthesis.speak(utterance);
-  };
-
-  const stopSpeaking = () => {
-    window.speechSynthesis.cancel();
-    setIsSpeaking(false);
-    setSpeakingMessage(null);
-  };
-
-  useEffect(() => {
-    const SpeechRecognition =
-      window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (SpeechRecognition) {
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = true;
-      recognitionRef.current.interimResults = true;
-      recognitionRef.current.lang = locale === "bn" ? "bn-BD" : "en-US";
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = Array.from(event.results)
-          .map((result: any) => result[0])
-          .map((result) => result.transcript)
-          .join("");
-        setInput(transcript);
-      };
-      recognitionRef.current.onend = () => setIsListening(false);
-    }
-  }, [locale]);
-
-  const handleListen = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
-    } else {
-      recognitionRef.current?.start();
-      setIsListening(true);
-    }
-  };
-
-  const t = translations[locale];
-  const gradeOptions = Array.from({ length: 12 }, (_, i) => ({
-    key: (i + 1).toString(),
-    label: `${t.classPlaceholder} ${i + 1}`,
-  }));
+  }, []);
 
   return (
-    <div className="page-shell">
-      <section className="hero-section">
-        <Card className="hero-card">
-          <CardBody className="hero-body">
-            <div className="hero-copy">
-              <div className="hero-badge">
-                <Chip color="primary" variant="flat">
-                  Shikhbo AI
-                </Chip>
-                <Chip variant="flat">শিখবো AI</Chip>
+    <motion.section className="col-span-12 mt-6 max-w-6xl mx-auto w-full">
+      <Card className="glass-panel overflow-hidden">
+        <CardBody>
+          <div className="relative px-2 py-2">
+            <div className="relative bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
+            <div className="relative flex flex-col gap-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs uppercase tracking-widest text-default-500 dark:text-default-400">
+                    {locale === "bn" ? "তুলনা" : "Comparison"}
+                  </div>
+                  <div className="text-xl sm:text-2xl font-semibold text-foreground">
+                    {t?.compare?.title}
+                  </div>
+                </div>
               </div>
-              <h1 className="hero-title">
-                প্রশ্ন? থাকতেই পারে!
-                <span className="hero-title-accent">উত্তর? সেকেন্ডেই!</span>
-              </h1>
-              <p className="hero-subtitle">
-                বাংলাদেশের শিক্ষার্থীদের জন্য স্মার্ট সহায়ক—জাতীয় কারিকুলাম
-                অনুযায়ী দ্রুত ও নির্ভুল উত্তর।
-              </p>
-              <div className="hero-actions">
-                <Button as="a" href="#chat" color="primary" size="lg">
-                  ফ্রি’তে ট্রাই করুন
-                </Button>
-                <Button as="a" href="#pricing" variant="bordered" size="lg">
-                  প্যাকেজ দেখুন
-                </Button>
-              </div>
-              <div className="hero-note">
-                Shikhbo AI: শিক্ষার্থী, অভিভাবক ও শিক্ষকের একাডেমিক সব প্রশ্নের
-                ইনস্ট্যান্ট সল্যুশন!
+              <div className="-mx-2 overflow-x-auto px-2 pb-1">
+                <Table
+                  aria-label={t?.compare?.title ?? criteriaLabel}
+                  removeWrapper
+                  classNames={{
+                    base: "min-w-[420px] sm:min-w-[520px] w-full",
+                    table: "border-separate border-spacing-y-3",
+                    thead: "hidden sm:table-header-group",
+                    th: "text-xs uppercase tracking-widest text-default-500 dark:text-default-400 bg-foreground/5 dark:bg-foreground/10",
+                    tr: "bg-black/10 dark:bg-white/10",
+                    td: "bg-black/10 dark:bg-black/60 border border-white/40 dark:border-white/25 text-sm sm:text-base text-foreground",
+                  }}
+                >
+                  <TableHeader columns={columns}>
+                    {(column) => (
+                      <TableColumn
+                        key={column.uid}
+                        align={column.uid === "criteria" ? "start" : "center"}
+                      >
+                        {column.name}
+                      </TableColumn>
+                    )}
+                  </TableHeader>
+                  <TableBody items={rows}>
+                    {(row: any) => (
+                      <TableRow key={row.label}>
+                        {(columnKey) => (
+                          <TableCell
+                            className={
+                              columnKey === "criteria"
+                                ? "rounded-l-xl"
+                                : columnKey === "us"
+                                  ? "rounded-r-xl"
+                                  : undefined
+                            }
+                          >
+                            {renderCell(row, columnKey)}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
               </div>
             </div>
-            <div className="hero-visual">
-              <Card className="hero-preview">
-                <CardBody className="hero-image-body">
-                  <Image
-                    src="/hero-chat.svg"
-                    alt="Shikhbo AI chat preview"
-                    className="hero-image"
-                  />
-                </CardBody>
-              </Card>
-            </div>
-          </CardBody>
-        </Card>
-      </section>
-
-      <section className="logos-section">
-        <div className="logos-strip">
-          <span className="logos-title">
-            Trusted by learners across Bangladesh
-          </span>
-          <div className="logos-row">
-            <Chip variant="flat">SSC</Chip>
-            <Chip variant="flat">HSC</Chip>
-            <Chip variant="flat">NCTB</Chip>
-            <Chip variant="flat">Coaching</Chip>
-            <Chip variant="flat">School</Chip>
           </div>
-        </div>
-      </section>
+        </CardBody>
+      </Card>
+    </motion.section>
+  );
+}
 
-      <section className="stats-section">
-        <div className="stats-grid">
-          <Card className="stat-card">
-            <CardBody>
-              <p className="stat-value">৫,০০০+</p>
-              <p className="stat-label">শিক্ষার্থী ইতোমধ্যে যুক্ত হয়েছে</p>
-            </CardBody>
-          </Card>
-          <Card className="stat-card">
-            <CardBody>
-              <p className="stat-value">১ লক্ষ+</p>
-              <p className="stat-label">প্রশ্নের সমাধান</p>
-            </CardBody>
-          </Card>
-          <Card className="stat-card">
-            <CardBody>
-              <p className="stat-value">১০,০০০+</p>
-              <p className="stat-label">ছবি দিয়ে প্রশ্নের সমাধান</p>
-            </CardBody>
-          </Card>
-        </div>
-      </section>
+export default function Page() {
+  const [locale, setLocale] = useState<Locale>("bn");
+  const [selectedClass, setSelectedClass] = useState<string>("5");
 
-      <section className="chat-section" id="chat">
-        <Card className="chat-card">
-          <CardHeader className="chat-header">
-            <div className="header-brand">
-              <Avatar
-                icon={<Bot className="icon-lg" />}
-                color="primary"
-                className="avatar-lg"
-              />
+  const { setInput, setGrade } = useChat(locale);
+  const chatInputId = "chat-input"; // convention: ChatInterface input should use this id
+
+  useEffect(() => {
+    setGrade(new Set([selectedClass]));
+  }, [selectedClass, setGrade]);
+
+  const subjects = SUBJECTS;
+
+  const L: any = (CONTENT as any)[locale];
+  const brand = locale === "bn" ? "শিখবো AI" : "Shikhbo AI";
+  const classLabel = locale === "bn" ? "শ্রেণি" : "Class";
+  const heroLines = String(L?.hero?.title ?? "").split("\n");
+  const classOptions = Array.from({ length: 12 }, (_, i) => ({
+    id: `${i + 1}`,
+    label: locale === "bn" ? `শ্রেণি ${i + 1}` : `Class ${i + 1}`,
+  }));
+
+  const handleSubjectSelect = (subject: any) => {
+    const prompt =
+      locale === "bn"
+        ? `আমি ${subject.bn} এর সাহায্য চাই।`
+        : `I need help with ${subject.en}.`;
+    setInput(prompt);
+    const el = document.getElementById(chatInputId) as HTMLElement | null;
+    if (el) el.focus();
+  };
+
+  return (
+    <div className="min-h-screen">
+      <motion.header
+        initial={{ y: -12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        className="sticky top-0 z-50 w-full"
+      >
+        <div className="max-w-6xl mx-auto pt-4">
+          <div className="glass-panel rounded-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <div className="glass-card h-9 w-9 rounded-xl flex items-center justify-center text-xs font-semibold tracking-wide">
+                AI
+              </div>
               <div>
-                <h1 className="header-title">Shikhbo AI</h1>
-                <p className="header-subtitle">{t.subtitle}</p>
-                <div className="gamification-badges">
-                  <Chip color="secondary" variant="flat" size="sm">
-                    🔥 Study Streak: 5 days
-                  </Chip>
-                  <Chip color="primary" variant="dot" size="sm">
-                    📚 Level 3 Scholar
-                  </Chip>
+                <div className="text-xl sm:text-2xl font-semibold leading-none text-foreground">
+                  {brand}
+                </div>
+                <div className="text-xs text-default-500 dark:text-default-400">
+                  {locale === "bn"
+                    ? "তৎক্ষণাৎ সমাধান, ২৪/৭"
+                    : "Instant answers, 24/7"}
                 </div>
               </div>
             </div>
-            <div className="header-actions">
-              <Autocomplete
-                aria-label="Select Class"
-                selectedKey={Array.from(grade)[0] || "5"}
-                onSelectionChange={(key) => {
-                  if (typeof key === "string") {
-                    setGrade(new Set([key]));
-                  }
-                }}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
+              <Select
+                aria-label={classLabel}
                 size="sm"
+                selectedKeys={new Set([selectedClass])}
+                onSelectionChange={(keys) => {
+                  const next = Array.from(keys as Set<string>)[0];
+                  if (next) setSelectedClass(next);
+                }}
                 variant="bordered"
-                color="primary"
-                className="class-select"
+                className="w-full sm:w-36"
                 classNames={{
-                  popoverContent: "popover-glass select-popover",
-                }}
-                placeholder={`${t.classPlaceholder}`}
-                defaultItems={gradeOptions}
-              >
-                {(item) => (
-                  <AutocompleteItem key={item.key}>
-                    {item.label}
-                  </AutocompleteItem>
-                )}
-              </Autocomplete>
-
-              <Dropdown
-                classNames={{
-                  content: "popover-glass",
+                  trigger:
+                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 dark:text-foreground px-3 py-2",
+                  value: "text-foreground",
+                  popoverContent:
+                    "bg-black/95 border border-white/25 text-white shadow-xl",
+                  listbox: "text-sm",
                 }}
               >
-                <DropdownTrigger>
-                  <Button isIconOnly variant="bordered" className="icon-button">
-                    <Settings className="icon-md" />
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  aria-label="Settings menu"
-                  onAction={(key) => {
-                    if (key === "light" || key === "dark") setTheme(key);
-                    if (key === "en" || key === "bn") setLocale(key);
-                  }}
-                >
-                  <DropdownSection title={t.language} showDivider>
-                    <DropdownItem key="en" startContent={<Globe size={18} />}>
-                      English
-                    </DropdownItem>
-                    <DropdownItem key="bn" startContent={<Globe size={18} />}>
-                      বাংলা
-                    </DropdownItem>
-                  </DropdownSection>
-                  <DropdownSection title={t.theme}>
-                    <DropdownItem key="light" startContent={<Sun size={18} />}>
-                      {t.light}
-                    </DropdownItem>
-                    <DropdownItem key="dark" startContent={<Moon size={18} />}>
-                      {t.dark}
-                    </DropdownItem>
-                  </DropdownSection>
-                </DropdownMenu>
-              </Dropdown>
-            </div>
-          </CardHeader>
+                {classOptions.map((c) => (
+                  <SelectItem key={c.id}>{c.label}</SelectItem>
+                ))}
+              </Select>
 
-          <div className="progress-section">
-            <div className="progress-header">
-              <span className="progress-label">Today's Progress</span>
-              <span className="progress-value">3/5 questions answered</span>
-            </div>
-            <div className="progress-bar">
-              <div className="progress-fill w-3/5"></div>
-            </div>
-            <div className="progress-reward">
-              <Chip color="secondary" size="sm">
-                🎯 2 more to earn a badge!
-              </Chip>
+              <Select
+                aria-label="Language"
+                size="sm"
+                selectedKeys={new Set([locale])}
+                onSelectionChange={(keys) => {
+                  const next = Array.from(keys as Set<string>)[0];
+                  if (next) setLocale(next as Locale);
+                }}
+                variant="bordered"
+                className="w-28 sm:w-28"
+                classNames={{
+                  trigger:
+                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 px-3 py-2",
+                  value: "text-sm text-foreground",
+                  popoverContent:
+                    "bg-black/95 border border-white/25 text-white shadow-xl",
+                  listbox: "text-sm",
+                }}
+              >
+                <SelectItem key="en">EN</SelectItem>
+                <SelectItem key="bn">BN</SelectItem>
+              </Select>
+
+              <ThemeSwitcher />
             </div>
           </div>
+        </div>
+      </motion.header>
 
-          <CardBody className="chat-body">
-            <div ref={scrollRef} className="message-scroll">
-              <div className="message-list">
-                {messages.map((message, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                    className={`message-row ${message.role}`}
-                  >
-                    {message.role === "assistant" && (
-                      <Avatar
-                        icon={<Bot className="icon-md" />}
-                        color="primary"
-                        className="avatar-md"
-                      />
-                    )}
-                    <Card className={`message-card ${message.role}`}>
-                      <CardBody className="message-body">
-                        <ReactMarkdown
-                          remarkPlugins={[remarkGfm]}
-                          rehypePlugins={[
-                            rehypeRaw,
-                            rehypeSanitize,
-                            rehypeHighlight,
-                          ]}
-                          components={{
-                            code({
-                              node,
-                              inline,
-                              className,
-                              children,
-                              ...props
-                            }: any) {
-                              return (
-                                <pre className="code-block">
-                                  <code className={className} {...props}>
-                                    {String(children).replace(/\n$/, "")}
-                                  </code>
-                                </pre>
-                              );
-                            },
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                        <div className="message-timestamp">
-                          {new Date(message.timestamp).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </div>
-                      </CardBody>
-                      {message.role === "assistant" && (
-                        <>
-                          <Divider className="message-divider" />
-                          <CardFooter className="message-footer">
-                            {isSpeaking &&
-                            speakingMessage === message.content ? (
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="light"
-                                color="danger"
-                                onPress={stopSpeaking}
-                              >
-                                <StopCircle className="icon-md" />
-                              </Button>
-                            ) : (
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="light"
-                                color={theme === "dark" ? "default" : "primary"}
-                                onPress={() => speak(message.content)}
-                              >
-                                <Volume2 className="icon-md" />
-                              </Button>
-                            )}
-                          </CardFooter>
-                        </>
-                      )}
-                    </Card>
-                    {message.role === "user" && (
-                      <Avatar
-                        icon={<User className="icon-md" />}
-                        color="default"
-                        className="avatar-md"
-                      />
-                    )}
-                  </motion.div>
-                ))}
-                {loading && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="message-row assistant"
-                  >
-                    <Card className="thinking-card">
-                      <CardBody className="message-body">
-                        <div className="thinking-row">
-                          <Spinner size="sm" color="default" />
-                          <span>{t.thinking}</span>
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </motion.div>
-                )}
+      <main
+        role="main"
+        aria-label={locale === "bn" ? "মূল বিষয়বস্তু" : "Main content"}
+        className="px-4 sm:px-6 pb-16"
+      >
+        <div className="max-w-6xl mx-auto grid grid-cols-12 gap-6 sm:gap-8 items-start mt-6">
+          <motion.section
+            initial={{ x: -12, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="col-span-12 lg:col-span-5"
+          >
+            <Card className="glass-panel p-6">
+              <CardBody>
+                <div className="glass-card rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300 w-auto">
+                  {L?.hero?.badge}
+                </div>
+                <h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground">
+                  {heroLines.map((line, idx) => {
+                    const isAccent = idx === heroLines.length - 1;
+                    return (
+                      <span
+                        key={`${line}-${idx}`}
+                        className={
+                          isAccent
+                            ? "bg-clip-text text-transparent bg-linear-to-b from-[#5EA2EF] to-[#0072F5] dark:from-[#FFFFFF] dark:to-[#B7C0CC]"
+                            : undefined
+                        }
+                      >
+                        {line}
+                        {idx < heroLines.length - 1 ? <br /> : null}
+                      </span>
+                    );
+                  })}
+                </h1>
+                <p className="text-base sm:text-lg text-default-600 dark:text-default-300 mt-4 max-w-xl">
+                  {L?.hero?.subtitle}
+                </p>
+                <div className="flex flex-wrap gap-3 mt-6">
+                  <Button className="glass-btn-primary" radius="full">
+                    {L?.hero?.cta}
+                  </Button>
+                  <Button className="glass-btn" radius="full">
+                    {locale === "bn" ? "পাঠ্যক্রম" : "Syllabus"}
+                  </Button>
+                </div>
+                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(L?.hero?.stats || [])
+                    .slice(0, 2)
+                    .map((s: any, i: number) => (
+                      <div
+                        key={i}
+                        className="glass-card px-4 py-3 text-sm font-semibold text-foreground"
+                      >
+                        {s}
+                      </div>
+                    ))}
+                </div>
+              </CardBody>
+            </Card>
+
+            <div className="mt-8">
+              <h3 className="text-lg font-semibold mb-4">
+                {L?.syllabus?.title}
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {subjects.map((s: any) => {
+                  const Icon = s.icon;
+                  return (
+                    <motion.div key={s.id} whileHover={{ scale: 1.02 }}>
+                      <Card
+                        onClick={() => handleSubjectSelect(s)}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            handleSubjectSelect(s);
+                          }
+                        }}
+                        aria-label={
+                          locale === "bn"
+                            ? `${s.name.bn} - শ্রেণি ${selectedClass} সহায়তা`
+                            : `${s.name.en} - Class ${selectedClass} support`
+                        }
+                        className="glass-card-hover p-0 rounded-2xl h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
+                      >
+                        <CardBody className="flex flex-col items-center justify-center gap-3 p-6 h-full text-center">
+                          <div
+                            className={`${s.color} glass-card w-14 h-14 flex items-center justify-center rounded-2xl`}
+                          >
+                            <Icon className="w-6 h-6" />
+                          </div>
+                          <div className="font-semibold text-sm mt-1">
+                            {locale === "bn" ? s.name.bn : s.name.en}
+                          </div>
+                          <div className="text-xs text-default-500 dark:text-default-400 mt-1">
+                            {locale === "bn"
+                              ? `শ্রেণি ${selectedClass} সহায়তা`
+                              : `Class ${selectedClass} support`}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </div>
             </div>
-          </CardBody>
-          <CardFooter className="chat-footer">
-            <div className="input-row">
-              <Button
-                isIconOnly
-                variant={isListening ? "solid" : "light"}
-                color={isListening ? "danger" : "primary"}
-                onPress={handleListen}
-              >
-                {isListening ? (
-                  <MicOff className="icon-md" />
-                ) : (
-                  <Mic className="icon-md" />
-                )}
-              </Button>
-              <Textarea
-                placeholder={t.inputPlaceholder}
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                minRows={1}
-                maxRows={3}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    sendMessage();
-                  }
-                }}
-                className="input-expand"
-              />
-              <Button
-                isIconOnly
-                color="primary"
-                size="lg"
-                onPress={sendMessage}
-                disabled={loading || !input.trim()}
-              >
-                <Send className="icon-md" />
-              </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      </section>
+          </motion.section>
 
-      <section className="audience-section">
-        <div className="section-head">
-          <h2 className="section-title">শিখবো AI কাদের জন্য?</h2>
-          <p className="section-subtitle">
-            শিক্ষার্থী, অভিভাবক ও শিক্ষকের জন্য সহজ, দ্রুত সমাধান।
-          </p>
+          <motion.section
+            initial={{ x: 12, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            className="col-span-12 lg:col-span-7"
+          >
+            <Card className="glass-panel p-4">
+              <CardBody>
+                <div
+                  id="chat-interface"
+                  className="h-160 rounded-2xl glass-card flex items-center justify-center"
+                >
+                  <ChatAutoMount />
+                </div>
+              </CardBody>
+            </Card>
+          </motion.section>
         </div>
-        <div className="audience-grid">
-          <Card className="audience-card">
-            <CardBody>
-              <Avatar icon={<User className="icon-md" />} color="primary" />
-              <h3 className="audience-title">শিক্ষার্থী</h3>
-              <p className="audience-text">
-                ক্লাসভিত্তিক ব্যাখ্যা, দ্রুত উত্তর, এবং স্মার্ট প্র্যাকটিস।
-              </p>
-            </CardBody>
-          </Card>
-          <Card className="audience-card">
-            <CardBody>
-              <Avatar icon={<Bot className="icon-md" />} color="primary" />
-              <h3 className="audience-title">শিক্ষক</h3>
-              <p className="audience-text">
-                উদাহরণসহ ব্যাখ্যা, প্রশ্নসেট তৈরিতে সহায়ক, সময় বাঁচায়।
-              </p>
-            </CardBody>
-          </Card>
-          <Card className="audience-card">
-            <CardBody>
-              <Avatar icon={<Globe className="icon-md" />} color="primary" />
-              <h3 className="audience-title">অভিভাবক</h3>
-              <p className="audience-text">
-                সন্তানের শেখার গতি বুঝতে ও সহায়তা দিতে সহজ সহচর।
-              </p>
-            </CardBody>
-          </Card>
-        </div>
-      </section>
 
-      <section className="pricing-section" id="pricing">
-        <div className="section-head">
-          <h2 className="section-title">সহজ ও সাশ্রয়ী প্যাকেজ</h2>
-          <p className="section-subtitle">
-            আপনার প্রয়োজন অনুযায়ী পছন্দের প্যাকেজটি বেছে নিন। সব প্যাকেজেই আছে
-            Shikhbo AI ব্যবহারের সুবিধা।
-          </p>
-        </div>
-        <div className="pricing-kicker">
-          <Chip variant="flat">Coming Soon</Chip>
-        </div>
-        <div className="pricing-shell">
-          <div className="pricing-grid pricing-blur" aria-hidden="true">
-            <Card className="pricing-card">
-              <CardBody>
-                <p className="pricing-name">ফ্রি</p>
-                <p className="pricing-price">৳০</p>
-                <p className="pricing-desc">১০ দিনের মেয়াদ</p>
-                <Divider className="pricing-divider" />
-                <ul className="pricing-list">
-                  <li>প্রতিদিন ৩টি প্রশ্ন করতে পারবে</li>
-                  <li>AI মডেল: Shikhbo AI Pro</li>
-                  <li>ইমেজ আপলোড করতে পারবেন</li>
-                </ul>
-                <Spacer y={1} />
-                <Button color="primary" variant="flat">
-                  ফ্রিতে শুরু করুন
-                </Button>
-              </CardBody>
-            </Card>
-            <Card className="pricing-card">
-              <CardBody>
-                <p className="pricing-name">স্টার্টার</p>
-                <p className="pricing-price">৳৪৯</p>
-                <p className="pricing-desc">৩ দিনের মেয়াদ</p>
-                <Divider className="pricing-divider" />
-                <ul className="pricing-list">
-                  <li>আনলিমিটেড প্রশ্ন</li>
-                  <li>AI মডেল: Shikhbo AI Pro</li>
-                  <li>ইমেজ আপলোড করতে পারবেন</li>
-                </ul>
-                <Spacer y={1} />
-                <Button color="primary">এখনই কিনে নিন</Button>
-              </CardBody>
-            </Card>
-            <Card className="pricing-card">
-              <CardBody>
-                <p className="pricing-name">বুস্ট</p>
-                <p className="pricing-price">৳৭৯</p>
-                <p className="pricing-desc">৭ দিনের মেয়াদ</p>
-                <Divider className="pricing-divider" />
-                <ul className="pricing-list">
-                  <li>আনলিমিটেড প্রশ্ন</li>
-                  <li>AI মডেল: Shikhbo AI Pro</li>
-                  <li>ইমেজ আপলোড করতে পারবেন</li>
-                </ul>
-                <Spacer y={1} />
-                <Button variant="bordered">এখনই কিনে নিন</Button>
-              </CardBody>
-            </Card>
-            <Card className="pricing-card highlight">
-              <CardBody>
-                <Chip color="primary" variant="flat" className="pricing-tag">
-                  মোস্ট পপুলার
-                </Chip>
-                <p className="pricing-name">প্রো</p>
-                <p className="pricing-price">৳২৭৯</p>
-                <p className="pricing-desc">৩০ দিনের মেয়াদ</p>
-                <Divider className="pricing-divider" />
-                <ul className="pricing-list">
-                  <li>আনলিমিটেড প্রশ্ন</li>
-                  <li>AI মডেল: Shikhbo AI Pro</li>
-                  <li>ইমেজ আপলোড করতে পারবেন</li>
-                </ul>
-                <Spacer y={1} />
-                <Button color="primary">এখনই কিনে নিন</Button>
-              </CardBody>
-            </Card>
-            <Card className="pricing-card">
-              <CardBody>
-                <p className="pricing-name">এলিট</p>
-                <p className="pricing-price">৳৭৪৯</p>
-                <p className="pricing-desc">৯০ দিনের মেয়াদ</p>
-                <Divider className="pricing-divider" />
-                <ul className="pricing-list">
-                  <li>আনলিমিটেড প্রশ্ন</li>
-                  <li>AI মডেল: Shikhbo AI Pro</li>
-                  <li>ইমেজ আপলোড করতে পারবেন</li>
-                </ul>
-                <Spacer y={1} />
-                <Button variant="bordered">এখনই কিনে নিন</Button>
-              </CardBody>
-            </Card>
-          </div>
-          <div className="pricing-overlay">
-            <Chip color="primary" variant="flat">
-              Coming Soon
-            </Chip>
-            <h3 className="pricing-overlay-title">প্রাইসিং শিগগিরই আসছে</h3>
-            <p className="pricing-overlay-text">
-              আমরা এখন MVP পর্যায়ে আছি। প্রি‑সিড রিলিজের জন্য অপেক্ষা করুন।
-            </p>
-            <Button variant="bordered" size="sm">
-              নোটিফাই মি
-            </Button>
-          </div>
-        </div>
-      </section>
+        <ComparisonTable t={L} locale={locale} />
+      </main>
 
-      <section className="testimonials-section">
-        <div className="section-head">
-          <h2 className="section-title">শিখো শিক্ষার্থীদের মতামত</h2>
-          <p className="section-subtitle">
-            বাস্তব শিক্ষার্থীদের অভিজ্ঞতা থেকে অনুপ্রেরণা।
-          </p>
-        </div>
-        <div className="testimonials-grid">
-          <Card className="testimonial-card">
-            <CardBody>
-              <p className="testimonial-quote">
-                “প্রতিটা কনসেপ্ট ক্লিয়ার করতে আমাকে অনেক বেশি হেল্প করেছে
-                অ্যানিমেটেড লেসনগুলো”
-              </p>
-              <p className="testimonial-name">নিবিড় কর্মকার</p>
-              <p className="testimonial-meta">Academic Program '25 SSC '25</p>
-            </CardBody>
-          </Card>
-          <Card className="testimonial-card">
-            <CardBody>
-              <p className="testimonial-quote">
-                “লাইভ ক্লাসে অ্যাডভান্সড প্রবলেম সলভিংও করায়”
-              </p>
-              <p className="testimonial-name">ইশরাত</p>
-              <p className="testimonial-meta">HSC '26 একাডেমিক প্রোগ্রাম</p>
-            </CardBody>
-          </Card>
-          <Card className="testimonial-card">
-            <CardBody>
-              <p className="testimonial-quote">
-                “অল্প খরচে এত ভালো টিচার, আমাদের স্বপ্নের চেয়ে বেশি”
-              </p>
-              <p className="testimonial-name">মুশফিক-এর মা</p>
-              <p className="testimonial-meta">SSC '25 GPA-5</p>
-            </CardBody>
-          </Card>
-        </div>
-      </section>
+      <SimpleFooter brand={brand} locale={locale} />
     </div>
   );
 }

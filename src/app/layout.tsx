@@ -1,19 +1,38 @@
-import { Inter, Hind_Siliguri } from "next/font/google";
+import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Outfit } from "next/font/google";
 import React from "react";
 import "./globals.css";
 import { Providers } from "./provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({
+  subsets: ["latin"],
+  variable: "--font-outfit",
+  display: "swap",
+});
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
+
 const hindSiliguri = Hind_Siliguri({
-  weight: ["400", "700"],
+  weight: ["300", "400", "500", "600", "700"],
   subsets: ["bengali"],
+  variable: "--font-hind",
+  display: "swap",
+});
+
+const notoSansBengali = Noto_Sans_Bengali({
+  subsets: ["bengali"],
+  variable: "--font-noto",
+  display: "swap",
 });
 
 export const metadata = {
   title: "Shikhbo AI - Your Virtual Tutor",
   description:
-    "Educational AI chat assistant for students in Bangladesh - powered by advanced AI models. Multilingual support with voice interaction.",
+    "AI tutor for students in Bangladesh. Get instant help with class 1–12 subjects in Bangla and English.",
   keywords: [
     "AI",
     "chat",
@@ -23,7 +42,6 @@ export const metadata = {
     "bengali",
     "bangladesh",
     "multilingual",
-    "voice",
     "qwen",
     "huggingface",
   ],
@@ -36,15 +54,15 @@ export const metadata = {
   openGraph: {
     title: "Shikhbo AI - Your Virtual Tutor",
     description:
-      "Educational AI chat assistant for students in Bangladesh with multilingual support.",
+      "AI tutor for students in Bangladesh with Bangla and English support.",
     type: "website",
-    locale: "en_US",
+    locale: "bn_BD",
   },
   twitter: {
     card: "summary_large_image",
     title: "Shikhbo AI - Your Virtual Tutor",
     description:
-      "Educational AI chat assistant for students in Bangladesh with multilingual support.",
+      "AI tutor for students in Bangladesh with Bangla and English support.",
   },
   robots: {
     index: true,
@@ -71,8 +89,7 @@ export const metadata = {
       "@type": "WebApplication",
       name: "Shikhbo AI",
       description:
-        "Educational AI chat assistant for students in Bangladesh with multilingual support",
-      url: "https://shikhbo-ai.vercel.app",
+        "AI tutor for students in Bangladesh with Bangla and English support.",
       applicationCategory: "EducationalApplication",
       operatingSystem: "Web Browser",
       offers: {
@@ -94,8 +111,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.className} ${hindSiliguri.className}`}>
+    <html lang="bn" suppressHydrationWarning>
+      <body
+        className={`${inter.variable} ${outfit.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} antialiased`}
+      >
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>

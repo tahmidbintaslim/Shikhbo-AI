@@ -1,0 +1,17 @@
+{
+    "functions": {
+        "src/app/api/**/*.ts": {
+            "maxDuration": 30
+        }
+    },
+    "crons": [],
+    "regions": [
+        "sin1"
+    ],
+    "framework": "nextjs",
+    "buildCommand": "bun run build",
+    "installCommand": "bun install",
+    "env": {
+        "NODE_ENV": "production"
+    }
+}
