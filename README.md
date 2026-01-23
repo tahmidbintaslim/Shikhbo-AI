@@ -1,61 +1,81 @@
-# AI Chat Assistant 🤖
+# Shikbo AI 🤖
 
-A beautiful, privacy-first AI chat application built with Next.js, TypeScript, and Transformers.js that runs entirely in your browser!
+Your Virtual Tutor - A beautiful, privacy-first AI chat application built with Next.js, TypeScript, and Hugging Face that provides educational assistance!
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue)
-![Transformers.js](https://img.shields.io/badge/Transformers.js-3.6-green)
-![License](https://img.shields.io/badge/License-MIT-yellow)
+![Hugging Face](https://img.shields.io/badge/Hugging%20Face-API-green)
+![License](https://img.shields.io/badge/License-CC--BY--NC--SA--4.0-orange)
 
 ## ✨ Key Features
 
-- 🔒 **100% Privacy-First** - No API keys required, all processing happens locally in your browser
-- 🤖 **Multiple AI Models** - Choose from GPT-2, DialoGPT, BlenderBot, T5, and Flan-T5
-- ⚡ **Zero Server Dependency** - Models run entirely client-side using WebAssembly
-- 💾 **Smart Caching** - Models are cached locally for instant subsequent use
-- 🎨 **Beautiful Modern UI** - Responsive design with smooth animations
-- 📚 **Educational Focus** - Optimized for learning, studying, and educational assistance
-- 🚀 **Production Ready** - Built with Next.js 14, TypeScript, and production optimizations
+- 🤖 **AI-Powered Tutoring** - Advanced Qwen model for intelligent educational assistance
+- 🌐 **Multilingual Support** - English and Bengali language processing
+- 🎤 **Voice Interaction** - Text-to-speech and speech-to-text capabilities
+- 📚 **Grade-Specific Learning** - Tailored responses for Classes 1-12
+- 🎨 **Beautiful Modern UI** - Glassmorphic design with smooth animations
+- 🚀 Production Ready - Built with Next.js 14, TypeScript, and modern web standards
+
+## 🇧🇩 Our Mission
+
+Shikbo AI is dedicated to empowering students in Bangladesh by providing accessible, AI-powered educational assistance. Our goal is to foster learning through intelligent, multilingual tutoring that adapts to different grade levels and languages.
 
 ## 🛠️ Technology Stack
 
-- **[Next.js 14](https://nextjs.org/)** - React framework with App Router and Server Components
+- **[Next.js 16](https://nextjs.org/)** - React framework with App Router and Server Components
 - **[TypeScript](https://www.typescriptlang.org/)** - Type-safe development
-- **[Transformers.js](https://huggingface.co/docs/transformers.js)** - Run Hugging Face models in the browser
+- **[Hugging Face Inference](https://huggingface.co/inference-api)** - Qwen 2.5-7B multilingual AI model
+- **[HeroUI](https://heroui.com/)** - Beautiful React components
 - **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
-- **[Lucide React](https://lucide.dev/)** - Beautiful icon library
+- **[Framer Motion](https://www.framer.com/motion/)** - Smooth animations
+- **[React Markdown](https://github.com/remarkjs/react-markdown)** - Markdown rendering
+- **[Bun](https://bun.sh/)** - Fast JavaScript runtime and package manager
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js 18+** (required)
-- **npm** or **yarn**
+- **Node.js 18+** (or a compatible version)
+- A package manager: **npm**, **yarn**, or **pnpm**
 
-### Installation
+### Installation & Setup
 
-1. **Clone the repository**
+1.  **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/your-username/ai-chat-assistant.git
-   cd ai-chat-assistant
-   ```
+    ```bash
+    git clone https://github.com/your-username/shikbo-ai.git
+    cd shikbo-ai
+    ```
 
-2. **Install dependencies**
+2.  **Install dependencies** (choose your package manager):
 
-   ```bash
-   npm install
-   ```
+    ```bash
+    # Using pnpm
+    pnpm install
 
-3. **Start development server**
+    # Using npm
+    npm install
 
-   ```bash
-   npm run dev
-   ```
+    # Using yarn
+    yarn install
+    ```
 
-4. **Open your browser**
+3.  **Start the development server:**
 
-   Visit [http://localhost:3000](http://localhost:3000) to start chatting!
+    ```bash
+    # Using pnpm
+    pnpm run dev
+
+    # Using npm
+    npm run dev
+
+    # Using yarn
+    yarn dev
+    ```
+
+4.  **Open your browser**
+
+    Visit [http://localhost:3000](http://localhost:3000) to start chatting!
 
 ### Production Deployment
 
@@ -86,15 +106,13 @@ A beautiful, privacy-first AI chat application built with Next.js, TypeScript, a
 
 ## 🤖 Available AI Models
 
-| Model                | Best For                                  | Size   | Speed  |
-| -------------------- | ----------------------------------------- | ------ | ------ |
-| **Flan-T5 Small**    | Educational Q&A, explanations, study help | ~200MB | ⭐⭐⭐ |
-| **T5 Small**         | Q&A, summarization, learning tasks        | ~200MB | ⭐⭐⭐ |
-| **DialoGPT Small**   | Interactive discussions, tutoring         | ~350MB | ⭐⭐   |
-| **BlenderBot Small** | Educational discussions, explanations     | ~400MB | ⭐⭐   |
-| **GPT-2**            | Creative writing, detailed explanations   | ~500MB | ⭐     |
+| Model              | Best For                                  | Size   | Speed    |
+| ------------------ | ----------------------------------------- | ------ | -------- |
+| **DistilGPT-2**    | General text generation, fast responses   | ~300MB | ⭐⭐⭐⭐ |
+| **Flan-T5 Small**  | Educational Q&A, explanations, study help | ~200MB | ⭐⭐⭐   |
+| **DialoGPT Small** | Interactive discussions, tutoring         | ~350MB | ⭐⭐     |
 
-_Note: Download size is one-time only. Models are cached permanently._
+_Note: All models are free and run entirely in your browser. Download size is one-time only. Models are cached permanently._
 
 ## 🎯 Production Features
 
@@ -103,7 +121,7 @@ _Note: Download size is one-time only. Models are cached permanently._
 - **Code Splitting** - Optimized bundle sizes with Next.js
 - **Model Caching** - Persistent model storage across sessions
 - **Lazy Loading** - Dynamic imports for better initial load times
-- **Memory Management** - Automatic cleanup and conversation limits
+- **Memory Management** - Conversation limits with optional cache clearing
 
 ### Security & Privacy
 
@@ -141,7 +159,6 @@ ai-chat-assistant/
 ├── .env.example          # Environment variables template
 ├── next.config.js        # Next.js configuration
 ├── tailwind.config.js    # Tailwind CSS configuration
-├── vercel.json           # Deployment configuration
 └── package.json          # Dependencies and scripts
 ```
 
@@ -202,15 +219,6 @@ The app works on any platform supporting Node.js:
 
 ## 🛠️ Development
 
-### Available Scripts
-
-```bash
-npm run dev      # Start development server
-npm run build    # Build for production
-npm run start    # Start production server
-npm run lint     # Run ESLint
-```
-
 ### Adding New Models
 
 1. Add model configuration to `src/lib/api.ts`
@@ -223,19 +231,9 @@ npm run lint     # Run ESLint
 - Update `tailwind.config.js` for design system changes
 - Edit components in `src/components/` for UI modifications
 
-## 🤝 Contributing
-
-We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0) - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 

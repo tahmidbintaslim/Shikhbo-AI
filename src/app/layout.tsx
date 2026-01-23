@@ -1,63 +1,105 @@
-import { Inter } from 'next/font/google'
-import React from 'react'
-import './globals.css'
+import { Inter, Hind_Siliguri } from "next/font/google";
+import React from "react";
+import "./globals.css";
+import { Providers } from "./provider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const inter = Inter({ subsets: ['latin'] })
+const inter = Inter({ subsets: ["latin"] });
+const hindSiliguri = Hind_Siliguri({
+  weight: ["400", "700"],
+  subsets: ["bengali"],
+});
 
 export const metadata = {
-    title: 'AI Chat Assistant - Privacy-First Browser-Based AI',
-    description: 'Educational AI chat assistant powered by Transformers.js. Runs entirely in your browser with complete privacy.',
-    keywords: ['AI', 'chat', 'assistant', 'transformers.js', 'privacy', 'browser-based', 'educational', 'huggingface', 'LLM'],
-    authors: [{ name: 'AI Chat Assistant Team' }],
-    creator: 'AI Chat Assistant',
-    publisher: 'AI Chat Assistant',
-    applicationName: 'AI Chat Assistant',
-    category: 'education',
-    classification: 'AI Assistant',
-    openGraph: {
-        title: 'AI Chat Assistant - Privacy-First Browser-Based AI',
-        description: 'Educational AI chat assistant that runs entirely in your browser. Complete privacy.',
-        type: 'website',
-        locale: 'en_US',
+  title: "Shikhbo AI - Your Virtual Tutor",
+  description:
+    "Educational AI chat assistant for students in Bangladesh - powered by advanced AI models. Multilingual support with voice interaction.",
+  keywords: [
+    "AI",
+    "chat",
+    "assistant",
+    "tutor",
+    "education",
+    "bengali",
+    "bangladesh",
+    "multilingual",
+    "voice",
+    "qwen",
+    "huggingface",
+  ],
+  authors: [{ name: "Shikhbo AI Team" }],
+  creator: "Shikhbo AI",
+  publisher: "Shikhbo AI",
+  applicationName: "Shikhbo AI",
+  category: "education",
+  classification: "AI Tutor",
+  openGraph: {
+    title: "Shikhbo AI - Your Virtual Tutor",
+    description:
+      "Educational AI chat assistant for students in Bangladesh with multilingual support.",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shikhbo AI - Your Virtual Tutor",
+    description:
+      "Educational AI chat assistant for students in Bangladesh with multilingual support.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
-    twitter: {
-        card: 'summary_large_image',
-        title: 'AI Chat Assistant - Privacy-First Browser-Based AI',
-        description: 'Educational AI chat assistant that runs entirely in your browser. Complete privacy.',
-    },
-    robots: {
-        index: true,
-        follow: true,
-        googleBot: {
-            index: true,
-            follow: true,
-            'max-video-preview': -1,
-            'max-image-preview': 'large',
-            'max-snippet': -1,
-        },
-    },
-    verification: {
-        google: process.env.GOOGLE_SITE_VERIFICATION,
-    },
-    formatDetection: {
-        email: false,
-        address: false,
-        telephone: false,
-    },
-}
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  other: {
+    "application/ld+json": JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      name: "Shikhbo AI",
+      description:
+        "Educational AI chat assistant for students in Bangladesh with multilingual support",
+      url: "https://shikhbo-ai.vercel.app",
+      applicationCategory: "EducationalApplication",
+      operatingSystem: "Web Browser",
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "BDT",
+      },
+      creator: {
+        "@type": "Organization",
+        name: "Shikhbo AI Team",
+      },
+    }),
+  },
+};
 
 export default function RootLayout({
-    children,
+  children,
 }: {
-    children: React.ReactNode
+  children: React.ReactNode;
 }) {
-    return (
-        <html lang="en">
-            <body className={inter.className}>
-                <div className="min-h-screen gradient-bg">
-                    {children}
-                </div>
-            </body>
-        </html>
-    )
+  return (
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${inter.className} ${hindSiliguri.className}`}>
+        <ErrorBoundary>
+          <Providers>{children}</Providers>
+        </ErrorBoundary>
+      </body>
+    </html>
+  );
 }
