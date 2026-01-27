@@ -146,7 +146,6 @@ export async function POST(request: Request) {
                 name: "openrouter",
                 apiKey: process.env.OPENROUTER_API_KEY,
                 baseURL: "https://openrouter.ai/api/v1",
-                compatibility: "strict",
             })
             : null;
 
@@ -155,7 +154,6 @@ export async function POST(request: Request) {
                 name: "groq",
                 apiKey: process.env.GROQ_API_KEY,
                 baseURL: "https://api.groq.com/openai/v1",
-                compatibility: "strict",
             })
             : null;
 

@@ -7,8 +7,8 @@ import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
 import { useChat } from "@/hooks/useChat";
 import { Button } from "@heroui/button";
-import { Textarea } from "@heroui/react";
-import { Accordion, AccordionItem } from "@heroui/react";
+import { Textarea } from "@heroui/input";
+import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Avatar } from "@heroui/avatar";
 import { User, Cpu } from "lucide-react";
 

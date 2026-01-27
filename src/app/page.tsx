@@ -7,16 +7,16 @@ import { SimpleFooter } from "@/components/SimpleFooter";
 import { Card, CardBody } from "@heroui/card";
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
+import { Chip } from "@heroui/chip";
+import { Switch } from "@heroui/switch";
 import {
-  Chip,
-  Switch,
   Table,
   TableBody,
   TableCell,
   TableColumn,
   TableHeader,
   TableRow,
-} from "@heroui/react";
+} from "@heroui/table";
 import { useTheme } from "next-themes";
 import ChatAutoMount from "@/components/ChatAutoMount";
 import "./globals.css";
