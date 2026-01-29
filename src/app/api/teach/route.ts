@@ -1,8 +1,11 @@
-// app/api/teach/route.ts
+// src/app/api/teach/route.ts
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createGroq } from '@ai-sdk/groq';
+import { HfInference } from "@huggingface/inference";
+import { Index } from "@upstash/vector";
+import { generateText } from 'ai';
 import { NextResponse } from "next/server";
 import { kv } from "@vercel/kv";
-import { createOpenAI } from "@ai-sdk/openai";
-import { generateText } from "ai";
 
 const KV_ENABLED = Boolean(
     process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
@@ -97,11 +100,40 @@ function setCachedResponse(key: string, response: string): Promise<void> {
 // Export for testing
 export { sanitizeInput, getCacheKey, getCachedResponse, setCachedResponse };
 
-export async function POST(request: Request) {
+// ---------------------------------------------------------
+// 1. SETUP CLIENTS
+// ---------------------------------------------------------
+// A. Vector DB (Memory)
+const index = process.env.UPSTASH_VECTOR_REST_URL && process.env.UPSTASH_VECTOR_REST_TOKEN
+    ? new Index({
+        url: process.env.UPSTASH_VECTOR_REST_URL,
+        token: process.env.UPSTASH_VECTOR_REST_TOKEN,
+    })
+    : null;
+
+// B. Embeddings (Using HF for free vectorization)
+const hf = new HfInference(process.env.HF_API_KEY);
+
+// C. AI Providers (The "Brains")
+const openrouter = process.env.OPENROUTER_API_KEY
+    ? createOpenRouter({
+        apiKey: process.env.OPENROUTER_API_KEY,
+    })
+    : null;
+
+const groq = process.env.GROQ_API_KEY
+    ? createGroq({
+        apiKey: process.env.GROQ_API_KEY,
+    })
+    : null;
+
+export const maxDuration = 45; // Allow time for fallbacks
+
+export async function POST(req: Request) {
     try {
         // Rate limiting
-        const ip = request.headers.get('x-forwarded-for') ||
-            request.headers.get('x-real-ip') ||
+        const ip = req.headers.get('x-forwarded-for') ||
+            req.headers.get('x-real-ip') ||
             'unknown';
 
         if (!checkRateLimit(ip)) {
@@ -111,118 +143,144 @@ export async function POST(request: Request) {
             );
         }
 
-        const body = await request.json();
-        let { input, grade } = body;
+        const { messages, grade, language } = await req.json();
+        const lastMessage = messages[messages.length - 1].content;
 
-        // Input validation and sanitization
-        if (!input || typeof input !== 'string') {
+        // Input validation
+        if (!lastMessage || typeof lastMessage !== 'string') {
             return NextResponse.json(
                 { error: "Invalid input" },
                 { status: 400 }
             );
         }
 
-        input = sanitizeInput(input);
-
-        if (!grade || typeof grade !== 'string' || !/^\d+$/.test(grade)) {
-            grade = "5"; // Default
-        }
-
-        const gradeNum = parseInt(grade);
-        if (gradeNum < 1 || gradeNum > 12) {
-            grade = "5";
-        }
-
-        // Check cache first
-        const cacheKey = getCacheKey(input, grade);
+        // Check cache first (using last message as key)
+        const cacheKey = getCacheKey(lastMessage, grade || "5");
         const cachedResponse = await getCachedResponse(cacheKey);
         if (cachedResponse) {
             return NextResponse.json({ result: cachedResponse });
         }
 
-        // lazily create clients so module import doesn't fail when env vars are absent
-        const openrouter = process.env.OPENROUTER_API_KEY
-            ? createOpenAI({
-                name: "openrouter",
-                apiKey: process.env.OPENROUTER_API_KEY,
-                baseURL: "https://openrouter.ai/api/v1",
-            })
-            : null;
+        // ---------------------------------------------------------
+        // STEP 1: RETRIEVAL (RAG)
+        // ---------------------------------------------------------
+        let contextText = "";
+        if (index) {
+            // We stick to HF for embeddings as it's reliable for this specific task
+            const embedding = await hf.featureExtraction({
+                model: "sentence-transformers/all-MiniLM-L6-v2",
+                inputs: lastMessage,
+            });
 
-        const groq = process.env.GROQ_API_KEY
-            ? createOpenAI({
-                name: "groq",
-                apiKey: process.env.GROQ_API_KEY,
-                baseURL: "https://api.groq.com/openai/v1",
-            })
-            : null;
+            const searchResults = await index.query({
+                vector: embedding as number[],
+                topK: 5, // Increase from 3 to 5 for better reasoning context
+                includeMetadata: true,
+                // Filter by language and grade
+                filter: `language = '${language || 'english'}' AND grade = ${grade || 1}`
+            });
 
-        // 1. Define the Tutor Persona (System Prompt)
-        // This tells the AI how to behave and how to interpret key terms in context.
+            // --- DEBUG LOGS ---
+            console.log("🔎 User Query:", lastMessage);
+            console.log(`📚 Found: ${searchResults.length} chunks | Filter: lang='${language || 'english'}', grade=${grade || 1}`);
+            searchResults.forEach((r, i) => {
+                console.log(`\n[Chunk ${i + 1}] Source: ${r.metadata?.source}`);
+                console.log(`Text Preview: ${(r.metadata?.text as string)?.slice(0, 100)}...`);
+            });
+            // -----------------
+
+            contextText = searchResults
+                .map(r => `[Source: ${r.metadata?.source}]: ${r.metadata?.text}`)
+                .join("\n\n");
+        }
+
         const systemPrompt = `
-You are Shikhbo AI, an expert academic tutor for Class 9-10 students in Bangladesh.
-Your goal is to explain STEM concepts (Physics, Chemistry, Math) clearly, accurately, and engagingly.
+You are **Shikhbo AI**, an advanced academic tutor for Class ${grade} (Medium: ${language}).
 
-LANGUAGE & TONE
-- Input may be English, Bengali, or Banglish (Bengali written in English).
-- Output: respond in Standard Bengali (প্রমিত বাংলা) unless explicitly asked for English.
-- Tone: encouraging, professional, and educational (like a helpful mentor).
+### YOUR GOAL
+Do not just give answers. **Teach the student how to think.**
+Use the **Provided Context** as your knowledge base.
 
-CONTEXT AWARENESS (CRITICAL)
-- Interpret keywords in the context of NCTB Curriculum (Physics Class 9-10).
-- "Kaj" (কাজ) = Work (Physics: Force × Displacement).
-- "Khomota" (ক্ষমতা) = Power (Physics: Rate of doing work).
-- "Shakti" (শক্তি) = Energy.
-- "Bol" (বল) = Force.
-- Do not interpret these as political/social power or physical trembling.
+### RESPONSE PROTOCOL (Step-by-Step)
+For every question (especially Math/Science), follow this structure:
 
-RESPONSE STRUCTURE
-1) Definition in Bengali
-2) Formula (use LaTeX, e.g., $W = Fs$, $P = W/t$)
-3) Real-life example (e.g., climbing stairs, rickshaw pulling)
-4) SI unit (Joule, Watt, Newton)
+1.  **🔍 Analyze the Problem:**
+    * Identify what is given.
+    * Identify what needs to be found.
 
-GUARDRAILS
-- Do not make up facts. If a query is ambiguous, ask a clarifying question.
-- Adjust complexity for Class ${grade || "General"}.
+2.  **📖 Reference the Concept:**
+    * Quote the relevant rule/formula from the Textbook Context.
+    * Example: "According to Newton's Second Law (Page 45)..."
+
+3.  **🧠 Step-by-Step Solution:**
+    * Show the logical steps clearly.
+    * Use LaTeX for math (e.g., $F = ma$).
+    * *Do not skip steps.* Explain *why* you are doing each step.
+
+4.  **✅ Final Conclusion:**
+    * State the answer clearly in Bengali (or English if requested).
+
+### TEXTBOOK CONTEXT:
+${contextText}
 `;
 
-        // 2. Call OpenRouter (cheap, Bengali-friendly) with Groq fallback
+        // ---------------------------------------------------------
+        // STEP 2: GENERATION (THE FALLBACK CASCADE)
+        // ---------------------------------------------------------
+
         let result: string | null = null;
+
+        // ATTEMPT 1: OPENROUTER (Priority #1)
+        // Use a free model on OpenRouter (e.g., Gemini Flash or Llama Free)
         if (openrouter) {
             try {
+                console.log("Attempting Provider 1: OpenRouter...");
                 const response = await generateText({
-                    model: (openrouter as any)("google/gemini-2.0-flash-001"),
+                    model: openrouter('google/gemini-2.0-flash-exp:free'), // Completely free model
                     system: systemPrompt,
-                    prompt: input,
-                    maxTokens: 500,
-                    temperature: 0.7,
-                } as any);
-                result = (response as any).text;
-            } catch (primaryError) {
-                console.warn("Primary model failed, switching to Groq fallback:", primaryError);
+                    messages: messages,
+                });
+                result = response.text;
+            } catch (err) {
+                console.warn("OpenRouter failed, switching to fallback...", err);
             }
         }
 
+        // ATTEMPT 2: HUGGING FACE INFERENCE (Priority #2)
         if (!result) {
-            if (!groq) {
-                return NextResponse.json(
-                    {
-                        error:
-                            "Missing AI provider key. Set OPENROUTER_API_KEY or GROQ_API_KEY.",
-                    },
-                    { status: 500 }
-                );
+            try {
+                console.log("Attempting Provider 2: Hugging Face...");
+                const response = await hf.chatCompletion({
+                    model: "Qwen/Qwen2.5-7B-Instruct",
+                    messages: [
+                        { role: "system", content: systemPrompt },
+                        ...messages
+                    ],
+                    max_tokens: 512,
+                });
+
+                result = response.choices[0]?.message?.content || null;
+            } catch (err) {
+                console.warn("Hugging Face failed, switching to fallback...", err);
             }
-            const fallback = await generateText({
-                model: (groq as any)("llama-3.3-70b-versatile"),
-                system: systemPrompt,
-                prompt: input,
-                maxTokens: 500,
-                temperature: 0.7,
-            } as any);
-            result = (fallback as any).text;
         }
+
+        // ATTEMPT 3: GROQ (Priority #3 - The "Fast" Safety Net)
+        if (!result && groq) {
+            try {
+                console.log("Attempting Provider 3: Groq...");
+                const response = await generateText({
+                    model: groq('deepseek-r1-distill-llama-70b'), // Reasoning model for step-by-step teaching
+                    system: systemPrompt,
+                    messages: messages,
+                });
+                result = response.text;
+            } catch (err) {
+                console.error("All providers failed.", err);
+                return NextResponse.json({ error: "Sorry, Shikhbo AI is currently overloaded. Please try again in 1 minute." }, { status: 503 });
+            }
+        }
+
         if (!result) {
             return NextResponse.json({ error: "No response from AI" }, { status: 500 });
         }
@@ -230,12 +288,10 @@ GUARDRAILS
         // Cache the response
         await setCachedResponse(cacheKey, result);
 
-        return NextResponse.json({
-            result
-        });
+        return NextResponse.json({ result });
 
     } catch (error) {
-        console.error("HF API Error:", error);
+        console.error("API Error:", error);
         return NextResponse.json(
             { error: "Failed to process request" },
             { status: 500 }

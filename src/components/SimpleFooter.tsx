@@ -15,7 +15,7 @@ export function SimpleFooter({
       : "Instant help across subjects — no app required.";
 
   return (
-    <footer className="max-w-6xl mx-auto mt-12 pb-10">
+    <footer className="max-w-6xl mx-auto mt-2 pb-4 px-4 sm:px-0">
       <div className="glass-panel rounded-2xl px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-center sm:text-left dark:bg-black/85 dark:border-white/30">
         <div className="flex items-center gap-3">
           <div className="glass-card h-9 w-9 rounded-xl flex items-center justify-center">
@@ -32,10 +32,10 @@ export function SimpleFooter({
             </div>
           </div>
         </div>
-        <div className="text-xs text-default-500 dark:text-white/70">
+        <div className="text-xs text-default-500 dark:text-white/70 w-full text-center sm:text-left">
           {locale === "bn"
-            ? "© 2026 সর্বস্বত্ব সংরক্ষিত"
-            : "© 2026 All rights reserved"}
+            ? `© ${new Date().getFullYear()} সর্বস্বত্ব সংরক্ষিত`
+            : `© ${new Date().getFullYear()} All rights reserved`}
         </div>
       </div>
     </footer>

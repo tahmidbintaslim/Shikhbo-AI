@@ -30,7 +30,7 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="w-full h-full flex flex-col bg-background text-foreground rounded-lg">
+    <div className="w-full h-full flex flex-col bg-background text-foreground rounded-2xl">
       <div className="flex justify-end p-2 border-b border-white/10">
         <Accordion isCompact className="w-fit">
           <AccordionItem

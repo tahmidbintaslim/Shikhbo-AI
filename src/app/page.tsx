@@ -197,14 +197,19 @@ function ComparisonTable({ t, locale }: { t: any; locale: Locale }) {
 
 export default function Page() {
   const [locale, setLocale] = useState<Locale>("bn");
-  const [selectedClass, setSelectedClass] = useState<string>("5");
+  const [selectedClass, setSelectedClass] = useState<string>("1");
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("english");
 
-  const { setInput, setGrade } = useChat(locale);
+  const { setInput, setGrade, setLanguage } = useChat(locale);
   const chatInputId = "chat-input"; // convention: ChatInterface input should use this id
 
   useEffect(() => {
     setGrade(new Set([selectedClass]));
   }, [selectedClass, setGrade]);
+
+  useEffect(() => {
+    setLanguage(selectedLanguage);
+  }, [selectedLanguage, setLanguage]);
 
   const subjects = SUBJECTS;
 
@@ -216,6 +221,11 @@ export default function Page() {
     id: `${i + 1}`,
     label: locale === "bn" ? `শ্রেণি ${i + 1}` : `Class ${i + 1}`,
   }));
+
+  const mediumOptions = [
+    { id: "english", label: locale === "bn" ? "ইংরেজি" : "English" },
+    { id: "bengali", label: locale === "bn" ? "বাংলা" : "Bengali" },
+  ];
 
   const handleSubjectSelect = (subject: any) => {
     const prompt =
@@ -232,7 +242,7 @@ export default function Page() {
       <motion.header
         initial={{ y: -12, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 w-full"
+        className="sticky top-0 z-50 w-full px-4 sm:px-6"
       >
         <div className="max-w-6xl mx-auto pt-4">
           <div className="glass-panel rounded-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -277,6 +287,30 @@ export default function Page() {
               </Select>
 
               <Select
+                aria-label="Medium"
+                size="sm"
+                selectedKeys={new Set([selectedLanguage])}
+                onSelectionChange={(keys) => {
+                  const next = Array.from(keys as Set<string>)[0];
+                  if (next) setSelectedLanguage(next);
+                }}
+                variant="bordered"
+                className="w-full sm:w-32"
+                classNames={{
+                  trigger:
+                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 dark:text-foreground px-3 py-2",
+                  value: "text-foreground",
+                  popoverContent:
+                    "bg-black/95 border border-white/25 text-white shadow-xl",
+                  listbox: "text-sm",
+                }}
+              >
+                {mediumOptions.map((m) => (
+                  <SelectItem key={m.id}>{m.label}</SelectItem>
+                ))}
+              </Select>
+
+              <Select
                 aria-label="Language"
                 size="sm"
                 selectedKeys={new Set([locale])}
@@ -308,7 +342,7 @@ export default function Page() {
       <main
         role="main"
         aria-label={locale === "bn" ? "মূল বিষয়বস্তু" : "Main content"}
-        className="px-4 sm:px-6 pb-16"
+        className="px-4 sm:px-6 pb-4"
       >
         <div className="max-w-6xl mx-auto grid grid-cols-12 gap-6 sm:gap-8 items-start mt-6">
           <motion.section
@@ -316,9 +350,9 @@ export default function Page() {
             animate={{ x: 0, opacity: 1 }}
             className="col-span-12 lg:col-span-5"
           >
-            <Card className="glass-panel p-6">
+            <Card className="glass-panel p-2">
               <CardBody>
-                <div className="glass-card rounded-full px-4 py-1 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300 w-auto">
+                <div className="glass-card rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300 w-max">
                   {L?.hero?.badge}
                 </div>
                 <h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground">
@@ -391,7 +425,7 @@ export default function Page() {
                         }
                         className="glass-card-hover p-0 rounded-2xl h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
                       >
-                        <CardBody className="flex flex-col items-center justify-center gap-3 p-6 h-full text-center">
+                        <CardBody className="flex flex-col items-center justify-center gap-3 px-2h-full text-center">
                           <div
                             className={`${s.color} glass-card w-14 h-14 flex items-center justify-center rounded-2xl`}
                           >
@@ -419,7 +453,7 @@ export default function Page() {
             animate={{ x: 0, opacity: 1 }}
             className="col-span-12 lg:col-span-7"
           >
-            <Card className="glass-panel p-4">
+            <Card className="glass-panel">
               <CardBody>
                 <div
                   id="chat-interface"

@@ -36,7 +36,8 @@ export function useChat(locale: Locale) {
     });
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    const [grade, setGrade] = useState(new Set(["5"]));
+    const [grade, setGrade] = useState(new Set(["1"]));
+    const [language, setLanguage] = useState("english");
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -63,10 +64,11 @@ export function useChat(locale: Locale) {
         setInput("");
         setLoading(true);
         try {
+            const currentMessages = [...messages, userMessage];
             const res = await fetch("/api/teach", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ input: userMessage.content, grade: Array.from(grade)[0] }),
+                body: JSON.stringify({ messages: currentMessages, grade: Array.from(grade)[0], language }),
             });
             const data = await res.json();
             const assistantMessage: Message = {
@@ -119,6 +121,8 @@ export function useChat(locale: Locale) {
         loading,
         grade,
         setGrade,
+        language,
+        setLanguage,
         scrollRef,
         sendMessage,
         clearMessages,

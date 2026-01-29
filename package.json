@@ -16,6 +16,7 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
+    "@ai-sdk/groq": "^3.0.16",
     "@ai-sdk/openai": "^3.0.14",
     "@heroui/accordion": "^2.2.26",
     "@heroui/alert": "^2.2.29",
@@ -61,11 +62,14 @@
     "@heroui/user": "^2.2.24",
     "@huggingface/inference": "^4.13.10",
     "@huggingface/transformers": "latest",
+    "@openrouter/ai-sdk-provider": "^2.1.1",
     "@react-aria/ssr": "^3.9.10",
     "@react-aria/visually-hidden": "^3.8.29",
+    "@upstash/vector": "^1.2.2",
     "@vercel/kv": "^3.0.0",
-    "ai": "^6.0.45",
+    "ai": "^6.0.57",
     "clsx": "^2.1.1",
+    "dotenv": "^17.2.3",
     "framer-motion": "^12.29.0",
     "highlight.js": "^11.11.1",
     "intl-messageformat": "^11.1.1",
@@ -74,6 +78,7 @@
     "next": "^16.1.4",
     "next-themes": "^0.4.6",
     "onnxruntime-web": "latest",
+    "pdf2json": "^4.0.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-markdown": "^10.1.0",
@@ -82,7 +87,8 @@
     "rehype-raw": "^7.0.0",
     "rehype-sanitize": "^6.0.0",
     "remark-gfm": "^4.0.1",
-    "remark-math": "^6.0.0"
+    "remark-math": "^6.0.0",
+    "tesseract.js": "^7.0.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
