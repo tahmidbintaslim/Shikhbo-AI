@@ -9,8 +9,8 @@
         "sin1"
     ],
     "framework": "nextjs",
-    "buildCommand": "bun run build",
-    "installCommand": "bun install",
+    "buildCommand": "npm run build",
+    "installCommand": "npm install",
     "env": {
         "NODE_ENV": "production"
     }
