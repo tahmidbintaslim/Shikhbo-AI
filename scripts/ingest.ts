@@ -16,7 +16,7 @@ if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
 
 function extractGrade(filename: string): number {
     const match = filename.match(/class\s*[-_]?\s*(\d+)/i);
-    return match ? parseInt(match[1]) : 0;
+    return match && match[1] ? parseInt(match[1]) : 0;
 }
 
 // ---------------------------------------------------------
@@ -51,7 +51,9 @@ async function extractTextWithOCR(filePath: string, language: 'eng' | 'ben') {
     const pages: { text: string; page: number }[] = [];
 
     for (let i = 0; i < images.length; i++) {
-        const imgPath = path.join(TEMP_DIR, images[i]);
+        const imgFile = images[i];
+        if (!imgFile) continue;
+        const imgPath = path.join(TEMP_DIR, imgFile);
         const { data: { text } } = await worker.recognize(imgPath);
 
         const cleanText = text.replace(/\s+/g, ' ').trim();
