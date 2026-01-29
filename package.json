@@ -89,7 +89,7 @@
     "remark-gfm": "^4.0.1",
     "remark-math": "^6.0.0",
     "tesseract.js": "^7.0.0",
-    "vercel": "^28.18.5"
+    "vercel": "^50.9.1"
   },
   "devDependencies": {
     "@playwright/test": "^1.57.0",
