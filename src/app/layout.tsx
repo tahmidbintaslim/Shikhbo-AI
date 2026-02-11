@@ -1,5 +1,6 @@
 import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Outfit } from "next/font/google";
 import React from "react";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Providers } from "./provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -118,6 +119,7 @@ export default function RootLayout({
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>
+        <Analytics />
       </body>
     </html>
   );
