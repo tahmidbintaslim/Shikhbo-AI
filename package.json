@@ -14,7 +14,8 @@
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "books:fetch": "node scripts/fetch-books.mjs"
   },
   "dependencies": {
     "@ai-sdk/groq": "^3.0.16",
