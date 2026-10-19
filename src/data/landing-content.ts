@@ -11,16 +11,12 @@ export const SUBJECTS = [
 
 export const CONTENT = {
   bn: {
-    nav: {
-      classes: "ক্লাস ১-১২",
-      exams: "বোর্ড পরীক্ষা",
-    },
     hero: {
       badge: "সম্পূর্ণ ফ্রি • ২৪/৭ অ্যাক্টিভ",
       title: "তোমার পার্সোনাল\nএআই টিউটর",
-      subtitle: "যেকোনো কঠিন প্রশ্নের উত্তর পাও মুহূর্তেই। ক্লাস ১ থেকে ১২, সব বিষয়।",
+      subtitle: "বাংলা বা ইংরেজিতে প্রশ্ন করো। আপাতত শুধু প্রথম শ্রেণির NCTB বাংলা, ইংরেজি ও গণিত বই থেকে উত্তর খোঁজা হয়।",
       cta: "পড়া শুরু করি",
-      stats: ["৫০,০০০+ প্রশ্ন সমাধান", "বিনামূল্যে শিক্ষা"],
+      stats: ["বাংলা ও ইংরেজি মাধ্যম", "বিনামূল্যে ব্যবহার"],
     },
     syllabus: {
       title: "আজকে কি শিখবে?",
@@ -33,21 +29,16 @@ export const CONTENT = {
       points: [
         { label: "খরচ", p: "উচ্চ খরচ", u: "সম্পূর্ণ ফ্রি" },
         { label: "সময়", p: "নির্দিষ্ট সময়", u: "২৪/৭ যেকোনো সময়" },
-        { label: "বিষয়", p: "১-২টি বিষয়", u: "সব বিষয় একসাথে" },
       ],
     },
   },
   en: {
-    nav: {
-      classes: "Class 1-12",
-      exams: "Board Exams",
-    },
     hero: {
       badge: "100% Free • Active 24/7",
       title: "Your Personal\nAI Tutor",
-      subtitle: "Get instant answers to difficult questions. Class 1 to 12, all subjects.",
+      subtitle: "Ask a question in Bangla or English. For now, textbook lookup covers NCTB Class 1 Bangla, English and Math books only.",
       cta: "Start Learning",
-      stats: ["10k+ Students", "50k+ Problems Solved", "Free Education"],
+      stats: ["Bangla and English medium", "Free to use"],
     },
     syllabus: {
       title: "What will you learn today?",
@@ -60,7 +51,6 @@ export const CONTENT = {
       points: [
         { label: "Cost", p: "Expensive", u: "Totally Free" },
         { label: "Time", p: "Fixed Schedule", u: "Anytime (24/7)" },
-        { label: "Subject", p: "Limited Subjects", u: "All Subjects" },
       ],
     },
   },

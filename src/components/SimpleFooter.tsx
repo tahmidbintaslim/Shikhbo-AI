@@ -11,8 +11,8 @@ export function SimpleFooter({
 }) {
   const tagline =
     locale === "bn"
-      ? "সব বিষয়ের জন্য তাৎক্ষণিক সহায়তা — কোনো অ্যাপ প্রয়োজন নেই।"
-      : "Instant help across subjects — no app required.";
+      ? "স্কুলের পড়ায় সাহায্য, কোনো অ্যাপ লাগবে না।"
+      : "Help with schoolwork, no app required.";
 
   return (
     <footer className="max-w-6xl mx-auto mt-2 pb-4 px-4 sm:px-0">

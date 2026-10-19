@@ -32,7 +32,7 @@ const notoSansBengali = Noto_Sans_Bengali({
 export const metadata = {
   title: "Shikhbo AI - Your Virtual Tutor",
   description:
-    "AI tutor for students in Bangladesh. Get instant help with class 1–12 subjects in Bangla and English.",
+    "AI tutor for students in Bangladesh. Ask in Bangla or English; textbook lookup covers NCTB Class 1 Bangla, English and Math books.",
   keywords: [
     "AI",
     "chat",
