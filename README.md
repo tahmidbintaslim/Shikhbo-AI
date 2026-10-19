@@ -1,261 +1,153 @@
-# Shikbo AI 🤖
+# Shikhbo AI
 
-Your Virtual Tutor - A beautiful, privacy-first AI chat application built with Next.js, TypeScript, and Hugging Face that provides educational assistance!
+**Live demo (prototype):** [ai-chat-vert-alpha.vercel.app](https://ai-chat-vert-alpha.vercel.app). On 2026-10-19 the page loaded, but every question returned a server error. That deployment is older than the code in this repository and needs a redeploy.
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.2-blue)
-![Hugging Face](https://img.shields.io/badge/Hugging%20Face-API-green)
-![License](https://img.shields.io/badge/License-CC--BY--NC--SA--4.0-orange)
+Shikhbo AI is a homework helper for students in Bangladesh. A student picks a class and a medium (Bangla or English) and asks a question. The app looks up matching pages in NCTB textbooks, then asks a hosted language model to explain the answer step by step.
 
-## ✨ Key Features
+**Status: prototype.** Textbook lookup covers four NCTB Class 1 books only. Questions about other classes or subjects are answered from the model's general knowledge, and the model is told to say that the answer does not come from the textbook.
 
-- 🤖 **AI-Powered Tutoring** - Advanced Qwen model for intelligent educational assistance
-- 🌐 **Multilingual Support** - English and Bengali language processing
-- 🎤 **Voice Interaction** - Text-to-speech and speech-to-text capabilities
-- 📚 **Grade-Specific Learning** - Tailored responses for Classes 1-12
-- 🎨 **Beautiful Modern UI** - Glassmorphic design with smooth animations
-- 🚀 Production Ready - Built with Next.js 14, TypeScript, and modern web standards
+## How it works
 
-## 🇧🇩 Our Mission
+The app is a single Next.js 16 page plus one API route, `POST /api/teach`.
 
-Shikbo AI is dedicated to empowering students in Bangladesh by providing accessible, AI-powered educational assistance. Our goal is to foster learning through intelligent, multilingual tutoring that adapts to different grade levels and languages.
+1. **Rate limit.** 10 requests per minute per client IP, keyed on the first `X-Forwarded-For` hop. It uses Upstash Redis when its credentials are set; otherwise an in-memory counter, which only works on a single long-running server.
+2. **Validation.** A zod schema accepts `user` and `assistant` turns only, keeps the last 10, requires an integer class from 1 to 12 and a medium of `english` or `bengali`, and caps lengths. HTML tags are stripped from questions.
+3. **Answer cache.** An exact-match cache for 5 minutes, keyed on class, medium and a SHA-256 hash of the latest question. It uses Redis through `KV_REST_API_*` when set, otherwise server memory.
+4. **Retrieval.** The question is embedded with `sentence-transformers/all-MiniLM-L6-v2` on Hugging Face and matched against Upstash Vector (top 5 pages, filtered by class and medium). If the embedding call or the vector query fails, or takes more than 5 seconds, the tutor answers without textbook context instead of failing.
+5. **Generation.** Providers are tried in order: OpenRouter, Hugging Face Inference Providers, Groq. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned.
 
-## 🛠️ Technology Stack
+The chat renders Markdown with KaTeX math. The conversation is kept in the browser's `localStorage` and can be exported as a text file.
 
-- **[Next.js 16](https://nextjs.org/)** - React framework with App Router and Server Components
-- **[TypeScript](https://www.typescriptlang.org/)** - Type-safe development
-- **[Hugging Face Inference](https://huggingface.co/inference-api)** - Qwen 2.5-7B multilingual AI model
-- **[HeroUI](https://heroui.com/)** - Beautiful React components
-- **[Tailwind CSS](https://tailwindcss.com/)** - Utility-first CSS framework
-- **[Framer Motion](https://www.framer.com/motion/)** - Smooth animations
-- **[React Markdown](https://github.com/remarkjs/react-markdown)** - Markdown rendering
-- **[Bun](https://bun.sh/)** - Fast JavaScript runtime and package manager
+## Limitations
 
-## 🚀 Quick Start
+- Only four Class 1 textbooks are indexed (see `books/sources.json`). The class picker goes up to 12 and the subject cards include Physics, Chemistry and ICT, but there is no textbook data for them.
+- Bangla retrieval is weak. The embedding model is English-only, and each OCR'd page is embedded as one chunk, so long pages are truncated.
+- The cache key covers only the latest question. A short follow-up such as "explain more" can get an answer cached from another conversation within 5 minutes.
+- Answers arrive in one piece (no streaming), and nothing checks them. The model can be wrong, and there is no content moderation.
+- There is no sign-in. The rate limit is the only protection against someone using up your provider credits.
+- Free-tier models change and get retired. Model IDs are read from environment variables so you can switch without a code change.
+- The "Start learning" and "Syllabus" buttons do nothing yet.
+- The Playwright specs in `e2e/` describe an older UI and are not run in CI.
 
-### Prerequisites
+## Privacy
 
-- **Node.js 18+** (or a compatible version)
-- A package manager: **npm**, **yarn**, or **pnpm**
+This app is aimed at children, so be clear about where a question goes:
 
-### Installation & Setup
+- **Model providers.** The question and the earlier turns of the conversation (up to 10 messages in all) go to the chat providers you configure: OpenRouter (and the model host it routes to), Hugging Face Inference Providers, and Groq. The question also goes to Hugging Face to be embedded. Each provider's own terms apply, and free tiers may log prompts. Read them before you deploy this for students.
+- **Upstash Vector** receives the question's embedding (a list of numbers), not the text.
+- **Answer cache.** The answer text is stored for 5 minutes in Redis or server memory. The key holds the class, the medium and a hash of the question, not the question itself.
+- **Rate limit.** A hash of the client IP is stored for up to a minute.
+- **Logs.** The server does not log questions or answers. Failures log one short line with the provider, the error type and the error message. Your host may keep its own request logs.
+- **Browser.** The conversation stays in `localStorage` until the student clears it.
+- There are no analytics or tracking scripts in the app.
 
-1.  **Clone the repository:**
+Tell students not to type personal details into the chat.
 
-    ```bash
-    git clone https://github.com/your-username/shikbo-ai.git
-    cd shikbo-ai
-    ```
+## Getting started
 
-2.  **Install dependencies** (choose your package manager):
-
-    ```bash
-    # Using pnpm
-    pnpm install
-
-    # Using npm
-    npm install
-
-    # Using yarn
-    yarn install
-    ```
-
-3.  **Start the development server:**
-
-    ```bash
-    # Using pnpm
-    pnpm run dev
-
-    # Using npm
-    npm run dev
-
-    # Using yarn
-    yarn dev
-    ```
-
-4.  **Open your browser**
-
-    Visit [http://localhost:3000](http://localhost:3000) to start chatting!
-
-### Production Deployment
-
-1. **Build for production**
-
-   ```bash
-   npm run build
-   ```
-
-2. **Start production server**
-
-   ```bash
-   npm start
-   ```
-
-3. **Deploy to Vercel** (recommended)
-   ```bash
-   npx vercel
-   ```
-
-## 📱 How to Use
-
-1. **Select an AI Model** - Choose from the dropdown menu in the header based on your needs
-2. **Start Chatting** - Type your message in the input field
-3. **First-Time Loading** - Models download automatically on first use (cached afterward)
-4. **Switch Models** - Change models anytime to get different response styles
-5. **Educational Focus** - Ask questions, request explanations, or get help with learning
-
-## 🤖 Available AI Models
-
-| Model              | Best For                                  | Size   | Speed    |
-| ------------------ | ----------------------------------------- | ------ | -------- |
-| **DistilGPT-2**    | General text generation, fast responses   | ~300MB | ⭐⭐⭐⭐ |
-| **Flan-T5 Small**  | Educational Q&A, explanations, study help | ~200MB | ⭐⭐⭐   |
-| **DialoGPT Small** | Interactive discussions, tutoring         | ~350MB | ⭐⭐     |
-
-_Note: All models are free and run entirely in your browser. Download size is one-time only. Models are cached permanently._
-
-## 🎯 Production Features
-
-### Performance Optimizations
-
-- **Code Splitting** - Optimized bundle sizes with Next.js
-- **Model Caching** - Persistent model storage across sessions
-- **Lazy Loading** - Dynamic imports for better initial load times
-- **Memory Management** - Conversation limits with optional cache clearing
-
-### Security & Privacy
-
-- **Zero Data Collection** - No user data ever leaves your device
-- **Content Security Policy** - Security headers for XSS protection
-- **HTTPS Ready** - SSL/TLS support for production deployments
-- **No External APIs** - Complete independence from third-party services
-
-### SEO & Accessibility
-
-- **Meta Tags** - Complete Open Graph and Twitter Card support
-- **Sitemap** - Auto-generated sitemap.xml
-- **Robots.txt** - Search engine optimization
-- **Responsive Design** - Works on all devices and screen sizes
-
-## 🗂 Project Structure
-
-```
-ai-chat-assistant/
-├── src/
-│   ├── app/                 # Next.js App Router
-│   │   ├── globals.css     # Global styles
-│   │   ├── layout.tsx      # Root layout with metadata
-│   │   ├── page.tsx        # Home page
-│   │   ├── robots.ts       # SEO robots.txt
-│   │   └── sitemap.ts      # SEO sitemap
-│   ├── components/         # React components
-│   │   └── ChatInterface.tsx
-│   ├── lib/               # Utilities and APIs
-│   │   ├── api.ts         # Transformers.js integration
-│   │   └── utils.ts       # Helper functions
-│   └── types/             # TypeScript definitions
-│       └── index.ts
-├── public/                # Static assets
-├── .env.example          # Environment variables template
-├── next.config.js        # Next.js configuration
-├── tailwind.config.js    # Tailwind CSS configuration
-└── package.json          # Dependencies and scripts
-```
-
-## ⚙️ Configuration
-
-### Environment Variables (Optional)
-
-Create `.env.local` for optional features:
+Requirements: Node.js 22, npm, and [Bun](https://bun.sh/) for the unit tests.
 
 ```bash
-# Optional: Google Analytics
-NEXT_PUBLIC_ANALYTICS_ID=your_analytics_id
-
-# Optional: App URL for production
-NEXT_PUBLIC_APP_URL=https://your-domain.com
-
-# Optional: Google Site Verification
-GOOGLE_SITE_VERIFICATION=your_verification_code
+git clone https://github.com/tahmidbintaslim/Shikhbo-AI.git
+cd Shikhbo-AI
+npm ci
+cp .env.example .env.local   # then fill in your keys
+npm run dev                  # http://localhost:3000
 ```
 
-### Next.js Configuration
+With no chat provider key set, the page loads but every question returns "currently overloaded" (HTTP 503). With a provider key but no Upstash Vector index, the tutor answers without textbook context.
 
-The app includes production-optimized configuration:
+## Environment variables
 
-```javascript
-// next.config.js
-const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    serverComponentsExternalPackages: [
-      "@huggingface/transformers",
-      "onnxruntime-web",
-    ],
-  },
-  // ... additional webpack configuration for Transformers.js
-};
+Set these in `.env.local` for local work, or in your host's settings. `.env.example` lists them all.
+
+| Name | Needed for | Notes |
+| --- | --- | --- |
+| `OPENROUTER_API_KEY` | Chat, first provider | Set at least one of the three chat keys |
+| `HF_API_KEY` | Chat, second provider; question embeddings | Required for textbook retrieval |
+| `GROQ_API_KEY` | Chat, third provider | |
+| `OPENROUTER_MODEL` | Optional | Default `google/gemma-4-31b-it:free` |
+| `HF_CHAT_MODEL` | Optional | Default `google/gemma-4-26B-A4B-it` |
+| `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |
+| `HF_EMBEDDING_MODEL` | Optional | Default `sentence-transformers/all-MiniLM-L6-v2`. Must match the model the index was built with |
+| `UPSTASH_VECTOR_REST_URL` | Textbook retrieval | |
+| `UPSTASH_VECTOR_REST_TOKEN` | Textbook retrieval | |
+| `UPSTASH_REDIS_REST_URL` | Shared rate limit | Use this pair or the `KV_REST_API_*` pair |
+| `UPSTASH_REDIS_REST_TOKEN` | Shared rate limit | |
+| `KV_REST_API_URL` | Shared rate limit and answer cache | Set by the Vercel marketplace Upstash integration |
+| `KV_REST_API_TOKEN` | Shared rate limit and answer cache | |
+| `NEXT_PUBLIC_APP_URL` | Optional | Base URL for `sitemap.xml` and `robots.txt` |
+| `GOOGLE_SITE_VERIFICATION` | Optional | Search Console verification tag |
+
+The default model IDs were checked against each provider's model list on 2026-10-19.
+
+## Textbook ingestion
+
+The textbooks are not stored in this repository. `books/sources.json` lists each file with its NCTB download link, a mirror, and a SHA-256 checksum.
+
+1. Create an Upstash Vector index with dimension 384 (the output size of `all-MiniLM-L6-v2`) and the cosine metric.
+2. Install [Ghostscript](https://www.ghostscript.com/) so the `gs` command is on your `PATH`. The script uses it to turn PDF pages into images.
+3. Put `HF_API_KEY`, `UPSTASH_VECTOR_REST_URL` and `UPSTASH_VECTOR_REST_TOKEN` in `.env.local`.
+4. Download the books and check their hashes:
+
+   ```bash
+   npm run books:fetch
+   ```
+
+5. Run the ingest script from the repository root:
+
+   ```bash
+   npx tsx scripts/ingest.ts
+   ```
+
+The script OCRs every page with Tesseract (`ben` for `books/bengali/`, `eng` for `books/english/`), skips near-empty pages, embeds each page and upserts it with `text`, `source`, `language`, `grade` and `page` metadata. The class comes from the file name ("Class 1") and the medium from the folder. tesseract.js downloads its language data on the first run. OCR runs one page at a time, so a full run is slow.
+
+## Scripts
+
+| Command | What it does |
+| --- | --- |
+| `npm run dev` | Development server |
+| `npm run build` | Production build |
+| `npm start` | Serve the production build |
+| `npm run lint` | ESLint |
+| `npm run typecheck` | `tsc --noEmit` |
+| `npm test` | Unit tests (`bun test`, files in `__tests__/`) |
+| `npm run books:fetch` | Download the NCTB textbooks listed in `books/sources.json` (add `-- --ocr` to also fetch the Tesseract data) |
+
+CI (`.github/workflows/ci.yml`) runs install, lint, typecheck, unit tests and build on pushes and pull requests to `main`.
+
+## Project layout
+
+```
+src/
+  app/page.tsx              Landing page and chat layout
+  app/api/teach/route.ts    The tutor API
+  components/ChatProvider.tsx  One chat state shared by the header pickers, subject cards and chat box
+  components/ChatInterface.tsx Chat box
+  hooks/useChat.ts          Chat state and the request to /api/teach
+  lib/teach.ts              Request schema, sanitizing, cache key, helpers
+  lib/teach-limits.ts       Length and history limits shared by client and server
+  lib/retrieval.ts          Embedding plus vector search with timeout and fallback
+  lib/rate-limit.ts         Upstash rate limit with in-memory fallback
+  lib/models.ts             Model IDs and their env overrides
+  data/landing-content.ts   Landing page copy (Bangla and English)
+scripts/
+  ingest.ts                 OCR, embed and index the textbooks
+  fetch-books.mjs           Download the textbooks listed in books/sources.json
+books/sources.json          Textbook sources and checksums
+__tests__/                  Unit tests
 ```
 
-## 🚀 Deployment
+## Deploying
 
-### Vercel (Recommended)
+The project is set up for Vercel (`vercel.json` pins the `sin1` region). Import the repository in Vercel, add the environment variables above, and deploy. Other hosts that run a Next.js Node server should work too, but only Vercel has been used. A static export does not work, because the tutor is an API route.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/your-username/ai-chat-assistant)
+## Tech stack
 
-1. Connect your GitHub repository to Vercel
-2. Set any optional environment variables
-3. Deploy with automatic builds on push
+Next.js 16 (App Router), React 19, TypeScript, HeroUI, Tailwind CSS 4, Framer Motion, Vercel AI SDK with the OpenRouter and Groq providers, `@huggingface/inference`, Upstash Vector, Upstash Redis and Ratelimit, `@vercel/kv`, zod, react-markdown with KaTeX, tesseract.js and Ghostscript for ingestion, and Bun for unit tests.
 
-### Other Platforms
+## License
 
-The app works on any platform supporting Node.js:
+The code is licensed under CC BY-NC-SA 4.0; see [LICENSE](LICENSE). The textbooks are published by the National Curriculum and Textbook Board (NCTB), Government of Bangladesh, are not part of this repository, and are not covered by its license.
 
-- **Netlify** - Static export compatible
-- **AWS Amplify** - Full SSR support
-- **Docker** - Use provided Dockerfile
-- **Self-hosted** - Standard Node.js deployment
-
-## 🛠️ Development
-
-### Adding New Models
-
-1. Add model configuration to `src/lib/api.ts`
-2. Update model selection in `availableModels` array
-3. Test model loading and response formatting
-
-### Customizing UI
-
-- Modify `src/app/globals.css` for global styles
-- Update `tailwind.config.js` for design system changes
-- Edit components in `src/components/` for UI modifications
-
-## 📄 License
-
-This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License (CC BY-NC-SA 4.0) - see the [LICENSE](LICENSE) file for details.
-
-## 🙏 Acknowledgments
-
-- **[Hugging Face](https://huggingface.co/)** - For Transformers.js and model ecosystem
-- **[Xenova](https://github.com/xenova)** - For ONNX model conversions and Transformers.js
-- **[Vercel](https://vercel.com/)** - For Next.js framework and deployment platform
-- **[The Open Source Community](https://opensource.org/)** - For making projects like this possible
-
-## 📊 Performance Notes
-
-- **Initial Load**: ~2-3 seconds for app initialization
-- **Model Download**: 200MB-500MB per model (one-time only)
-- **Response Time**: 1-5 seconds depending on model size and device
-- **Memory Usage**: 200MB-1GB depending on loaded models
-- **Browser Support**: Chrome 88+, Firefox 78+, Safari 14+
-
-## 🏘 Support
-
-- **Documentation**: Check our [Wiki](https://github.com/your-username/ai-chat-assistant/wiki)
-- **Issues**: [GitHub Issues](https://github.com/your-username/ai-chat-assistant/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-username/ai-chat-assistant/discussions)
-
----
-
-**Made with ❤️ by developers who believe in privacy-first AI**
+Issues and pull requests: https://github.com/tahmidbintaslim/Shikhbo-AI
