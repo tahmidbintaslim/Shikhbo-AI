@@ -2,17 +2,20 @@
 import { useState, useRef, useEffect } from "react";
 import { Message } from "@/types";
 import { generateId } from "@/lib/utils";
+import { MAX_ASSISTANT_CHARS, MAX_HISTORY, type Language } from "@/lib/teach-limits";
 
-type Locale = "en" | "bn";
+export type Locale = "en" | "bn";
 
 const translations = {
     en: {
         fetchError: "Error connecting to the teacher bot.",
         apiError: "Sorry, I couldn't find an answer.",
+        rateLimited: "Too many questions in a short time. Please wait a minute and try again.",
     },
     bn: {
         fetchError: "শিক্ষক বট সংযোগ করতে ত্রুটি হয়েছে।",
         apiError: "দুঃখিত, আমি উত্তরটি খুঁজে পাচ্ছি না।",
+        rateLimited: "অল্প সময়ে অনেক প্রশ্ন করা হয়েছে। এক মিনিট পরে আবার চেষ্টা করো।",
     },
 };
 
@@ -36,8 +39,8 @@ export function useChat(locale: Locale) {
     });
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
-    const [grade, setGrade] = useState(new Set(["1"]));
-    const [language, setLanguage] = useState("english");
+    const [grade, setGrade] = useState("1");
+    const [language, setLanguage] = useState<Language>("english");
 
     const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -64,16 +67,27 @@ export function useChat(locale: Locale) {
         setInput("");
         setLoading(true);
         try {
-            const currentMessages = [...messages, userMessage];
+            // The API accepts user/assistant turns only and keeps the last
+            // MAX_HISTORY of them; send just that, without ids or timestamps.
+            const history = [...messages, userMessage]
+                .filter((m) => m.role === "user" || m.role === "assistant")
+                .slice(-MAX_HISTORY)
+                .map(({ role, content }) => ({
+                    role,
+                    content: role === "assistant" ? content.slice(0, MAX_ASSISTANT_CHARS) : content,
+                }));
             const res = await fetch("/api/teach", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: currentMessages, grade: Array.from(grade)[0], language }),
+                body: JSON.stringify({ messages: history, grade, language }),
             });
-            const data = await res.json();
+            const data = await res.json().catch(() => ({}));
+            const fallback = res.status === 429
+                ? translations[locale].rateLimited
+                : translations[locale].apiError;
             const assistantMessage: Message = {
                 id: generateId(),
-                content: data.result || translations[locale].apiError,
+                content: (res.ok && typeof data.result === "string" && data.result) || fallback,
                 role: "assistant",
                 timestamp: new Date(),
             };
