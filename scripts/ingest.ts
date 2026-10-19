@@ -5,6 +5,7 @@ import { Index } from "@upstash/vector";
 import { HfInference } from "@huggingface/inference";
 import dotenv from 'dotenv';
 import { createWorker } from 'tesseract.js';
+import { getModelConfig } from '../src/lib/models';
 
 dotenv.config({ path: '.env.local' });
 
@@ -107,7 +108,8 @@ async function ingestBooks() {
                     const contextText = `[Page: ${p.page}] ${p.text}`;
 
                     const embedding = await hf.featureExtraction({
-                        model: "sentence-transformers/all-MiniLM-L6-v2",
+                        // Must match the model /api/teach embeds questions with.
+                        model: getModelConfig().embedding,
                         inputs: contextText,
                     });
 
