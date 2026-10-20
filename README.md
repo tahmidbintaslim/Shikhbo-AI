@@ -10,7 +10,7 @@ Shikhbo AI is a homework helper for students in Bangladesh. A student picks a cl
 
 The app is a single Next.js 16 page plus one API route, `POST /api/teach`.
 
-1. **Rate limit.** 10 requests per minute per client IP, keyed on the first `X-Forwarded-For` hop. It uses Upstash Redis when its credentials are set; otherwise an in-memory counter, which only works on a single long-running server.
+1. **Rate limit.** 10 requests per minute per client IP, keyed on the first `X-Forwarded-For` hop. Vercel sets that header itself; behind a proxy that passes a client's own `X-Forwarded-For` through, a client can pick its key and get around the limit. It uses Upstash Redis when its credentials are set; otherwise an in-memory counter, which only works on a single long-running server.
 2. **Validation.** A zod schema accepts `user` and `assistant` turns only, keeps the last 10, requires an integer class from 1 to 12 and a medium of `english` or `bengali`, and caps lengths. HTML tags are stripped from questions.
 3. **Answer cache.** An exact-match cache for 5 minutes, keyed on class, medium and a SHA-256 hash of the latest question. It uses Redis through `KV_REST_API_*` when set, otherwise server memory.
 4. **Retrieval.** The question is embedded with `sentence-transformers/all-MiniLM-L6-v2` on Hugging Face and matched against Upstash Vector (top 5 pages, filtered by class and medium). If the embedding call or the vector query fails, or takes more than 5 seconds, the tutor answers without textbook context instead of failing.
@@ -35,8 +35,8 @@ This app is aimed at children, so be clear about where a question goes:
 
 - **Model providers.** The question and the earlier turns of the conversation (up to 10 messages in all) go to the chat providers you configure: OpenRouter (and the model host it routes to), Hugging Face Inference Providers, and Groq. The question also goes to Hugging Face to be embedded. Each provider's own terms apply, and free tiers may log prompts. Read them before you deploy this for students.
 - **Upstash Vector** receives the question's embedding (a list of numbers), not the text.
-- **Answer cache.** The answer text is stored for 5 minutes in Redis or server memory. The key holds the class, the medium and a hash of the question, not the question itself.
-- **Rate limit.** A hash of the client IP is stored for up to a minute.
+- **Answer cache.** The answer text is stored for 5 minutes in Redis. Without Redis it is kept in server memory, where an expired answer is only removed when the same question comes in again or the server restarts. The key holds the class, the medium and a hash of the question, not the question itself.
+- **Rate limit.** A hash of the client IP is the rate-limit key. Upstash Redis keeps it for about two minutes. The in-memory fallback keeps it until the server restarts, or until more than 10,000 keys are stored and expired ones are cleared.
 - **Logs.** The server does not log questions or answers. Failures log one short line with the provider, the error type and the error message. Your host may keep its own request logs.
 - **Browser.** The conversation stays in `localStorage` until the student clears it.
 - There are no analytics or tracking scripts in the app.
