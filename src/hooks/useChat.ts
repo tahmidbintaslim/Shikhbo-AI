@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Message } from "@/types";
 import { generateId } from "@/lib/utils";
-import { MAX_ASSISTANT_CHARS, MAX_HISTORY, type Language } from "@/lib/teach-limits";
+import { MAX_ASSISTANT_CHARS, recentTurns, type Language } from "@/lib/teach-limits";
 
 export type Locale = "en" | "bn";
 
@@ -68,14 +68,14 @@ export function useChat(locale: Locale) {
         setLoading(true);
         try {
             // The API accepts user/assistant turns only and keeps the last
-            // MAX_HISTORY of them; send just that, without ids or timestamps.
-            const history = [...messages, userMessage]
-                .filter((m) => m.role === "user" || m.role === "assistant")
-                .slice(-MAX_HISTORY)
-                .map(({ role, content }) => ({
-                    role,
-                    content: role === "assistant" ? content.slice(0, MAX_ASSISTANT_CHARS) : content,
-                }));
+            // MAX_HISTORY of them, starting at a user turn; send just that,
+            // without ids or timestamps.
+            const history = recentTurns(
+                [...messages, userMessage].filter((m) => m.role === "user" || m.role === "assistant"),
+            ).map(({ role, content }) => ({
+                role,
+                content: role === "assistant" ? content.slice(0, MAX_ASSISTANT_CHARS) : content,
+            }));
             const res = await fetch("/api/teach", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

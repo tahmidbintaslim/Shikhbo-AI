@@ -8,6 +8,17 @@ export type Language = (typeof LANGUAGES)[number];
 
 /** Most recent messages forwarded to the model. Older turns are dropped. */
 export const MAX_HISTORY = 10;
+
+/**
+ * The last MAX_HISTORY turns, starting at a user turn. Chat templates that
+ * enforce user/assistant alternation reject a history that opens with the
+ * assistant, which a plain slice of an alternating chat produces.
+ */
+export function recentTurns<T extends { role: string }>(turns: T[]): T[] {
+  const recent = turns.slice(-MAX_HISTORY);
+  const firstUser = recent.findIndex((turn) => turn.role === "user");
+  return firstUser > 0 ? recent.slice(firstUser) : recent;
+}
 /** Hard cap on the messages array the API accepts before trimming. */
 export const MAX_MESSAGES = 40;
 /** A student's question, after sanitizing. */

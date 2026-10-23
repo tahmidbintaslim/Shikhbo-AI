@@ -4,9 +4,9 @@ import {
   LANGUAGES,
   MAX_ASSISTANT_CHARS,
   MAX_ASSISTANT_CHARS_HARD,
-  MAX_HISTORY,
   MAX_MESSAGES,
   MAX_USER_CHARS,
+  recentTurns,
   type Language,
 } from "./teach-limits";
 
@@ -67,7 +67,7 @@ export const TeachRequestSchema = z
   )
   .transform((body) => ({
     ...body,
-    messages: body.messages.filter((m) => m.content.length > 0).slice(-MAX_HISTORY),
+    messages: recentTurns(body.messages.filter((m) => m.content.length > 0)),
   }));
 
 export type TeachRequest = z.output<typeof TeachRequestSchema>;

@@ -11,7 +11,7 @@ import {
     sanitizeInput,
     stripThinkBlocks,
 } from "../src/lib/teach";
-import { MAX_HISTORY, MAX_USER_CHARS } from "../src/lib/teach-limits";
+import { MAX_HISTORY, MAX_USER_CHARS, recentTurns } from "../src/lib/teach-limits";
 
 const ask = (content: string) => ({ role: "user", content });
 
@@ -84,8 +84,19 @@ describe("teach request schema", () => {
         const result = parseTeachRequest({ messages, grade: 2, language: "english" });
         expect(result.success).toBe(true);
         if (!result.success) return;
-        expect(result.data.messages).toHaveLength(MAX_HISTORY);
+        // The last MAX_HISTORY turns open with an assistant turn here, which is
+        // dropped so the history starts with the student.
+        expect(result.data.messages).toHaveLength(MAX_HISTORY - 1);
+        expect(result.data.messages[0]).toEqual({ role: "user", content: "q16" });
         expect(result.data.messages[result.data.messages.length - 1]).toEqual({ role: "user", content: "q24" });
+    });
+
+    test("recentTurns keeps a history that already starts with the student", () => {
+        const turns = Array.from({ length: 11 }, (_, i) => ({ role: i % 2 === 0 ? "assistant" : "user", content: `t${i}` }));
+        const recent = recentTurns(turns);
+        expect(recent).toHaveLength(MAX_HISTORY);
+        expect(recent[0]).toEqual({ role: "user", content: "t1" });
+        expect(recentTurns([{ role: "user", content: "only" }])).toEqual([{ role: "user", content: "only" }]);
     });
 
     test("caps the question length and rejects oversized payloads", () => {
