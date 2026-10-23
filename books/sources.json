@@ -1,0 +1,65 @@
+{
+  "description": "Where the files that scripts/ingest.ts reads come from. They are not stored in this repository. Run `npm run books:fetch` to download the textbooks; tesseract.js downloads the OCR language data itself on the first ingest run.",
+  "checked": "2026-10-19",
+  "license": "The textbooks are published by the National Curriculum and Textbook Board (NCTB), Government of Bangladesh. This repository's license does not cover them.",
+  "listing": "https://nctb.gov.bd/pages/static-pages/695b9adec4774958d7b708cd",
+  "listingNote": "NCTB page for the 2026 academic year, primary level, Class 1. It links each book to drive.egovcloud.gov.bd (used below) and to a Google Drive copy (mirror).",
+  "books": [
+    {
+      "path": "books/bengali/Class 1 Bangla_compressed.pdf",
+      "title": "আমার বাংলা বই (Amar Bangla Boi)",
+      "class": 1,
+      "medium": "bengali",
+      "url": "https://drive.egovcloud.gov.bd/index.php/s/j2OipTMp0QihpIR/download",
+      "mirror": "https://drive.google.com/file/d/1hf-W5GVlAy3cHstFlozNBuE2oz7u9YXy/view",
+      "bytes": 8900382,
+      "sha256": "9268b3d4decb46cff922503d079005dbfe774ab92c43a0cd0a4047cdef50a4d1"
+    },
+    {
+      "path": "books/bengali/Class 1 Math_compressed.pdf",
+      "title": "প্রাথমিক গণিত (Primary Mathematics, Bangla version)",
+      "class": 1,
+      "medium": "bengali",
+      "url": "https://drive.egovcloud.gov.bd/index.php/s/UhraLRRxdBynh1U/download",
+      "mirror": "https://drive.google.com/file/d/1V5eBwsQYrG-6qajVZUwwetml5Oezl10r/view",
+      "bytes": 11569292,
+      "sha256": "22be8d975a23583367e6e3ae9e892893401e011bc4a0aba40665a11d77c44b26"
+    },
+    {
+      "path": "books/english/Class 1 English_compressed.pdf",
+      "title": "English for Today",
+      "class": 1,
+      "medium": "english",
+      "url": "https://drive.egovcloud.gov.bd/index.php/s/CW6nYiJRMJE8trb/download",
+      "mirror": "https://drive.google.com/file/d/1UX9fbOBUKrf3mMh6E0I-Gw2emoQV-XWy/view",
+      "bytes": 14738438,
+      "sha256": "973530b8d39a50e224c6d10b9faa7ff9bd3e502d6bf96795fc4c6800307176ac"
+    },
+    {
+      "path": "books/english/class 1 math_compressed (1).pdf",
+      "title": "Primary Mathematics (English version)",
+      "class": 1,
+      "medium": "english",
+      "url": "https://drive.egovcloud.gov.bd/index.php/s/lp11ImNTfh7T9Xh/download",
+      "mirror": "https://drive.google.com/file/d/1D8QeLW7SZ2d7oPJM3TmQei9_bOEet2i5/view",
+      "bytes": 14642608,
+      "sha256": "38fc5ee4e3c26b64fe438e9200380311b0920b1a3c5edabd36d52019044699bb"
+    }
+  ],
+  "ocrData": [
+    {
+      "path": "eng.traineddata",
+      "url": "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng/4.0.0_best_int/eng.traineddata.gz",
+      "gzip": true,
+      "sha256": "5dc5d8d640a212c9d6184921ba103b186f50e0fed9ee716c53e6b312b400d747",
+      "note": "tesseract.js language data (default source). The sha256 is of the unzipped file, which tesseract.js caches in the working directory."
+    },
+    {
+      "path": "ben.traineddata",
+      "url": "https://cdn.jsdelivr.net/npm/@tesseract.js-data/ben/4.0.0_best_int/ben.traineddata.gz",
+      "gzip": true,
+      "sha256": "0b3319da916ce374b1863955d1d61e2aebdebe37bf4e0dbfa59c8596f6d2e57f",
+      "note": "tesseract.js language data (default source). The sha256 is of the unzipped file, which tesseract.js caches in the working directory."
+    }
+  ]
+}

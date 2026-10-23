@@ -1,7 +1,9 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { useChat } from "@/hooks/useChat";
+import { ChatProvider, useChatContext } from "@/components/ChatProvider";
+import type { Locale } from "@/hooks/useChat";
+import type { Language } from "@/lib/teach-limits";
 import CONTENT, { SUBJECTS } from "@/data/landing-content";
 import { SimpleFooter } from "@/components/SimpleFooter";
 import { Card, CardBody } from "@heroui/card";
@@ -83,8 +85,6 @@ function ThemeSwitcher() {
   );
 }
 // END: Icons and ThemeSwitcher
-
-type Locale = "en" | "bn";
 
 function ComparisonTable({ t, locale }: { t: any; locale: Locale }) {
   const criteriaLabel = locale === "bn" ? "মানদণ্ড" : "Criteria";
@@ -196,20 +196,24 @@ function ComparisonTable({ t, locale }: { t: any; locale: Locale }) {
 }
 
 export default function Page() {
-  const [locale, setLocale] = useState<Locale>("bn");
-  const [selectedClass, setSelectedClass] = useState<string>("1");
-  const [selectedLanguage, setSelectedLanguage] = useState<string>("english");
+  return (
+    <ChatProvider>
+      <Landing />
+    </ChatProvider>
+  );
+}
 
-  const { setInput, setGrade, setLanguage } = useChat(locale);
+function Landing() {
+  const {
+    locale,
+    setLocale,
+    grade: selectedClass,
+    setGrade,
+    language: selectedLanguage,
+    setLanguage,
+    setInput,
+  } = useChatContext();
   const chatInputId = "chat-input"; // convention: ChatInterface input should use this id
-
-  useEffect(() => {
-    setGrade(new Set([selectedClass]));
-  }, [selectedClass, setGrade]);
-
-  useEffect(() => {
-    setLanguage(selectedLanguage);
-  }, [selectedLanguage, setLanguage]);
 
   const subjects = SUBJECTS;
 
@@ -222,16 +226,16 @@ export default function Page() {
     label: locale === "bn" ? `শ্রেণি ${i + 1}` : `Class ${i + 1}`,
   }));
 
-  const mediumOptions = [
+  const mediumOptions: { id: Language; label: string }[] = [
     { id: "english", label: locale === "bn" ? "ইংরেজি" : "English" },
     { id: "bengali", label: locale === "bn" ? "বাংলা" : "Bengali" },
   ];
 
-  const handleSubjectSelect = (subject: any) => {
+  const handleSubjectSelect = (subject: (typeof SUBJECTS)[number]) => {
     const prompt =
       locale === "bn"
-        ? `আমি ${subject.bn} এর সাহায্য চাই।`
-        : `I need help with ${subject.en}.`;
+        ? `আমি ${subject.name.bn} এর সাহায্য চাই।`
+        : `I need help with ${subject.name.en}.`;
     setInput(prompt);
     const el = document.getElementById(chatInputId) as HTMLElement | null;
     if (el) el.focus();
@@ -268,7 +272,7 @@ export default function Page() {
                 selectedKeys={new Set([selectedClass])}
                 onSelectionChange={(keys) => {
                   const next = Array.from(keys as Set<string>)[0];
-                  if (next) setSelectedClass(next);
+                  if (next) setGrade(next);
                 }}
                 variant="bordered"
                 className="w-full sm:w-36"
@@ -292,7 +296,7 @@ export default function Page() {
                 selectedKeys={new Set([selectedLanguage])}
                 onSelectionChange={(keys) => {
                   const next = Array.from(keys as Set<string>)[0];
-                  if (next) setSelectedLanguage(next);
+                  if (next === "english" || next === "bengali") setLanguage(next);
                 }}
                 variant="bordered"
                 className="w-full sm:w-32"
@@ -409,21 +413,16 @@ export default function Page() {
                   return (
                     <motion.div key={s.id} whileHover={{ scale: 1.02 }}>
                       <Card
-                        onClick={() => handleSubjectSelect(s)}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            handleSubjectSelect(s);
-                          }
-                        }}
+                        // HeroUI Card ignores onClick unless isPressable is set;
+                        // onPress also covers Enter and Space.
+                        isPressable
+                        onPress={() => handleSubjectSelect(s)}
                         aria-label={
                           locale === "bn"
                             ? `${s.name.bn} - শ্রেণি ${selectedClass} সহায়তা`
                             : `${s.name.en} - Class ${selectedClass} support`
                         }
-                        className="glass-card-hover p-0 rounded-2xl h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
+                        className="glass-card-hover p-0 rounded-2xl w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
                       >
                         <CardBody className="flex flex-col items-center justify-center gap-3 px-2h-full text-center">
                           <div

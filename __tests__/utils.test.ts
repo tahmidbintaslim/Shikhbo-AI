@@ -1,5 +1,5 @@
 import { describe, test, expect } from "bun:test";
-import { sanitizeInput, getCacheKey } from "../src/app/api/teach/route";
+import { sanitizeInput, getCacheKey } from "../src/lib/teach";
 import { generateId, cn } from "../src/lib/utils";
 describe("API Security & Caching", () => {
     test("sanitizeInput removes scripts and limits length", () => {
@@ -17,8 +17,8 @@ describe("API Security & Caching", () => {
     });
 
     test("getCacheKey normalizes input", () => {
-        const key1 = getCacheKey("Hello World", "5");
-        const key2 = getCacheKey("  hello world  ", "5");
+        const key1 = getCacheKey("Hello World", "5", "english");
+        const key2 = getCacheKey("  hello world  ", "5", "english");
         expect(key1).toBe(key2);
     });
 });

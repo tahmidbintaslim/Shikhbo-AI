@@ -1,0 +1,3 @@
+[test]
+# Unit tests only. e2e/ holds Playwright specs, which bun cannot run.
+root = "./__tests__"

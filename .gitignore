@@ -40,3 +40,9 @@ Thumbs.db
 .eslintcache
 .env*.local
 .aider*
+
+# Textbooks and OCR data are downloaded, not committed (see books/sources.json)
+books/**/*.pdf
+books/**/*.part
+*.traineddata
+temp_ocr/

@@ -5,7 +5,8 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import rehypeHighlight from "rehype-highlight";
-import { useChat } from "@/hooks/useChat";
+import { useChatContext } from "@/components/ChatProvider";
+import { MAX_USER_CHARS } from "@/lib/teach-limits";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
 import { Accordion, AccordionItem } from "@heroui/accordion";
@@ -22,7 +23,7 @@ export default function ChatInterface() {
     sendMessage,
     clearMessages,
     exportConversation,
-  } = useChat("en");
+  } = useChatContext();
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -146,6 +147,7 @@ export default function ChatInterface() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask a question..."
+            maxLength={MAX_USER_CHARS}
             className="glass-input flex-1 resize-none rounded-lg text-sm focus:outline-none"
             minRows={1}
             maxRows={5}
