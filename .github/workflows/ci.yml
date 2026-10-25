@@ -44,3 +44,20 @@ jobs:
 
       - name: Build
         run: npm run build
+
+      # Smoke tests against the production build. CI has no provider keys,
+      # so they also check that the tutor reports "not configured" (503)
+      # instead of failing with a 500.
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Smoke tests (Playwright)
+        run: npm run test:e2e
+
+      - name: Upload Playwright traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-traces
+          path: test-results/
+          retention-days: 7

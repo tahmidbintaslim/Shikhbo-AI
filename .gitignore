@@ -46,3 +46,7 @@ books/**/*.pdf
 books/**/*.part
 *.traineddata
 temp_ocr/
+
+# Playwright
+test-results/
+playwright-report/
