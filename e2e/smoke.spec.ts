@@ -11,7 +11,16 @@ test("home page renders the tutor with Bangla as the default UI language", async
   await page.goto("/");
   await expect(page).toHaveTitle(/Shikhbo AI/);
   await expect(page.getByText("শিখবো AI").first()).toBeVisible();
-  await expect(page.getByLabel("Chat input")).toBeVisible();
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeVisible();
+  await expect(page.getByRole("button", { name: "প্রশ্ন পাঠাও" })).toBeVisible();
+});
+
+test("the chat box follows the UI language picker", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /Language/ }).click();
+  await page.getByRole("option", { name: "EN" }).click();
+  await expect(page.getByLabel("Chat input")).toHaveAttribute("placeholder", "Ask a question...");
+  await expect(page.getByRole("button", { name: "Send message" })).toHaveText("Send");
 });
 
 test("security headers are sent", async ({ request }) => {
@@ -50,8 +59,8 @@ test.describe("without a provider key", () => {
 
   test("the chat tells the student the tutor is not set up", async ({ page }) => {
     await page.goto("/");
-    await page.getByLabel("Chat input").fill("What is 2 + 3?");
-    await page.getByRole("button", { name: "Send message" }).click();
+    await page.getByLabel("প্রশ্ন লেখার ঘর").fill("What is 2 + 3?");
+    await page.getByRole("button", { name: "প্রশ্ন পাঠাও" }).click();
     await expect(page.getByText("এই সাইটে টিউটর এখনো চালু করা হয়নি")).toBeVisible();
   });
 });

@@ -13,8 +13,45 @@ import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Avatar } from "@heroui/avatar";
 import { User, Cpu } from "lucide-react";
 
+// HeroUI's `dark:` variant matches only an element that itself has the
+// `.dark` class, so dark styles inside the chat use `[.dark_&]:`, which
+// matches under the `.dark` class next-themes puts on <html>.
+
+// Labels follow the UI language picked in the header (Bangla by default).
+const LABELS = {
+  en: {
+    actions: "Actions",
+    moreActions: "More actions",
+    clear: "Clear",
+    clearLabel: "Clear conversation",
+    export: "Export",
+    exportLabel: "Export conversation",
+    empty: "Start a conversation",
+    inputLabel: "Chat input",
+    placeholder: "Ask a question...",
+    send: "Send",
+    sendLabel: "Send message",
+    sending: "Sending...",
+  },
+  bn: {
+    actions: "অপশন",
+    moreActions: "আরও অপশন",
+    clear: "মুছে ফেলো",
+    clearLabel: "কথোপকথন মুছে ফেলো",
+    export: "এক্সপোর্ট",
+    exportLabel: "কথোপকথন এক্সপোর্ট করো",
+    empty: "কথোপকথন শুরু করো",
+    inputLabel: "প্রশ্ন লেখার ঘর",
+    placeholder: "একটি প্রশ্ন লেখো...",
+    send: "পাঠাও",
+    sendLabel: "প্রশ্ন পাঠাও",
+    sending: "পাঠানো হচ্ছে...",
+  },
+} as const;
+
 export default function ChatInterface() {
   const {
+    locale,
     messages,
     input,
     setInput,
@@ -24,6 +61,7 @@ export default function ChatInterface() {
     clearMessages,
     exportConversation,
   } = useChatContext();
+  const t = LABELS[locale];
 
   const handleSubmit = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -36,8 +74,8 @@ export default function ChatInterface() {
         <Accordion isCompact className="w-fit">
           <AccordionItem
             key="1"
-            aria-label="More actions"
-            title="Actions"
+            aria-label={t.moreActions}
+            title={t.actions}
             className="text-xs"
           >
             <div className="flex flex-col">
@@ -46,20 +84,20 @@ export default function ChatInterface() {
                 variant="light"
                 size="sm"
                 onClick={clearMessages}
-                aria-label="Clear conversation"
+                aria-label={t.clearLabel}
                 className="text-xs hover:underline"
               >
-                Clear
+                {t.clear}
               </Button>
               <Button
                 type="button"
                 variant="light"
                 size="sm"
                 onClick={exportConversation}
-                aria-label="Export conversation"
+                aria-label={t.exportLabel}
                 className="text-xs hover:underline"
               >
-                Export
+                {t.export}
               </Button>
             </div>
           </AccordionItem>
@@ -72,7 +110,7 @@ export default function ChatInterface() {
       >
         {messages.length === 0 ? (
           <div className="flex h-full items-center justify-center text-sm text-foreground/60">
-            Start a conversation
+            {t.empty}
           </div>
         ) : (
           messages.map((m) => (
@@ -94,11 +132,11 @@ export default function ChatInterface() {
                 className={`max-w-[85%] px-3 py-2 rounded-xl ${
                   m.role === "user"
                     ? "bg-primary text-primary-foreground"
-                    : "glass-card bg-black/5 dark:bg-white/5" // Use glass-card for AI response
+                    : "glass-card bg-black/5 [.dark_&]:bg-white/5"
                 }`}
               >
                 {m.role === "assistant" ? (
-                  <div className="text-sm prose prose-sm max-w-none dark:prose-invert">
+                  <div className="text-sm prose prose-sm max-w-none prose-code:before:content-none prose-code:after:content-none [.dark_&]:prose-invert">
                     <ReactMarkdown
                       remarkPlugins={[remarkGfm, remarkMath]}
                       rehypePlugins={[rehypeKatex, rehypeHighlight]}
@@ -107,13 +145,13 @@ export default function ChatInterface() {
                           const isInline = !className;
                           return isInline ? (
                             <code
-                              className="rounded bg-black/10 px-1 py-0.5 text-xs dark:bg-white/10"
+                              className="rounded bg-black/10 px-1 py-0.5 text-xs [.dark_&]:bg-white/10"
                               {...props}
                             >
                               {children}
                             </code>
                           ) : (
-                            <pre className="overflow-x-auto rounded-lg bg-black/10 p-3 text-xs dark:bg-white/10">
+                            <pre className="overflow-x-auto rounded-lg bg-black/10 p-3 text-xs [.dark_&]:bg-white/10">
                               <code className={className} {...props}>
                                 {children}
                               </code>
@@ -143,10 +181,10 @@ export default function ChatInterface() {
         <div className="flex gap-2 items-center">
           <Textarea
             id="chat-input"
-            aria-label="Chat input"
+            aria-label={t.inputLabel}
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask a question..."
+            placeholder={t.placeholder}
             maxLength={MAX_USER_CHARS}
             className="glass-input flex-1 resize-none rounded-lg text-sm focus:outline-none"
             minRows={1}
@@ -157,10 +195,10 @@ export default function ChatInterface() {
               type="submit"
               color="primary"
               isDisabled={loading}
-              aria-label="Send message"
+              aria-label={t.sendLabel}
               className="text-sm hover:shadow-md"
             >
-              {loading ? "Sending..." : "Send"}
+              {loading ? t.sending : t.send}
             </Button>
           </div>
         </div>
