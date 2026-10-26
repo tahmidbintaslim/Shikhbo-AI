@@ -159,6 +159,34 @@ describe("helpers", () => {
         expect(errorSummary("x")).toBe("unknown error");
     });
 
+    test("errorSummary hides URLs and token-like values", () => {
+        // The messages Node 22's fetch gives for a token pasted into the URL
+        // variable and for a redis:// URL with its password.
+        const swapped = new TypeError("Failed to parse URL from ABUFakeVectorToken0123456789abcdefXYZ=/query");
+        const withPassword = new TypeError(
+            "Request cannot be constructed from a URL that includes credentials: redis://default:S3cretPass@eu1-x.upstash.io:6379/query",
+        );
+        const swappedLine = errorSummary(swapped);
+        expect(swappedLine).not.toContain("ABUFakeVectorToken");
+        expect(swappedLine.startsWith("TypeError: Failed to parse URL from")).toBe(true);
+        const passwordLine = errorSummary(withPassword);
+        expect(passwordLine).not.toContain("S3cretPass");
+        expect(passwordLine).not.toContain("upstash.io");
+        expect(passwordLine).toContain("<url>");
+
+        // A long key that the 160-character cut would leave 20 characters of
+        // must still be redacted, so redaction runs before the cut.
+        const longKey = `sk-or-v1-${"a1".repeat(32)}`;
+        const padded = errorSummary(new Error(`${"x ".repeat(62)}${longKey}`));
+        expect(padded).not.toContain("a1a1a1");
+
+        // Model IDs and long error class names stay readable.
+        const model = errorSummary(new Error("model google/gemma-4-31b-it:free is not available"));
+        expect(model).toContain("google/gemma-4-31b-it:free");
+        const named = Object.assign(new Error("Not Found"), { name: "InferenceClientProviderApiError" });
+        expect(errorSummary(named)).toBe("InferenceClientProviderApiError: Not Found");
+    });
+
     test("model IDs come from env with defaults", () => {
         expect(getModelConfig({})).toEqual({ ...DEFAULT_MODELS });
         const custom = getModelConfig({ OPENROUTER_MODEL: "a/b", GROQ_MODEL: "  ", HF_CHAT_MODEL: "c/d" });

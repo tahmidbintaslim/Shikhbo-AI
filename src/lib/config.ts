@@ -13,6 +13,11 @@ export interface ServiceConfig {
   hfKey: string | null;
   groqKey: string | null;
   vector: { url: string; token: string } | null;
+  /**
+   * Settings that are set but cannot work, as log lines that name the
+   * variable. Never the value: a token pasted into a URL variable is common.
+   */
+  problems: string[];
 }
 
 function value(raw: string | undefined): string | null {
@@ -20,14 +25,42 @@ function value(raw: string | undefined): string | null {
   return trimmed ? trimmed : null;
 }
 
+/**
+ * True for an `https://` URL with no user name or password, the only shape an
+ * Upstash REST endpoint has. The Upstash Vector client accepts any string and
+ * fails on every query instead, and Node's fetch error quotes the URL, so a
+ * token or a `redis://user:password@...` URL would reach the logs.
+ */
+export function isRestUrl(raw: string): boolean {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return false;
+  }
+  return url.protocol === "https:" && url.username === "" && url.password === "" && url.hostname !== "";
+}
+
 export function readServiceConfig(env: Env = process.env): ServiceConfig {
   const vectorUrl = value(env.UPSTASH_VECTOR_REST_URL);
   const vectorToken = value(env.UPSTASH_VECTOR_REST_TOKEN);
+  const problems: string[] = [];
+  let vector: ServiceConfig["vector"] = null;
+  if (vectorUrl && vectorToken) {
+    if (isRestUrl(vectorUrl)) {
+      vector = { url: vectorUrl, token: vectorToken };
+    } else {
+      problems.push(
+        "textbook retrieval disabled (not an https REST URL without credentials), check UPSTASH_VECTOR_REST_URL",
+      );
+    }
+  }
   return {
     openrouterKey: value(env.OPENROUTER_API_KEY),
     hfKey: value(env.HF_API_KEY),
     groqKey: value(env.GROQ_API_KEY),
-    vector: vectorUrl && vectorToken ? { url: vectorUrl, token: vectorToken } : null,
+    vector,
+    problems,
   };
 }
 

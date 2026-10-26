@@ -21,7 +21,7 @@ Screenshots from a local production build (`npm run build && npm start`), 1280 x
 - Three chat providers tried in order (OpenRouter, Hugging Face Inference Providers, Groq), so one provider being down or out of free quota does not stop answers.
 - Answers render as Markdown with KaTeX math. The conversation stays in the browser and can be exported as a text file.
 - Per-IP rate limit (Upstash Redis, or in memory for local work) and a 5-minute answer cache.
-- Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a malformed Redis or vector URL disables that one service and logs which variable to fix.
+- Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a Redis or vector URL that is not an `https://` REST URL disables that one service (and `/api/health` reports it) and logs which variable to fix.
 - `GET /api/health` reports whether the deployment has a chat provider and textbook lookup (counts and booleans only).
 
 ## How it works
@@ -99,7 +99,7 @@ Set these in `.env.local` for local work, or in your host's settings. `.env.exam
 | `HF_CHAT_MODEL` | Optional | Default `google/gemma-4-26B-A4B-it` |
 | `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |
 | `HF_EMBEDDING_MODEL` | Optional | Default `sentence-transformers/all-MiniLM-L6-v2`. Must match the model the index was built with |
-| `UPSTASH_VECTOR_REST_URL` | Textbook retrieval | |
+| `UPSTASH_VECTOR_REST_URL` | Textbook retrieval | An `https://` REST URL with no user name or password; anything else turns retrieval off |
 | `UPSTASH_VECTOR_REST_TOKEN` | Textbook retrieval | |
 | `UPSTASH_REDIS_REST_URL` | Shared rate limit | Use this pair or the `KV_REST_API_*` pair. An `https://` REST URL, not `redis://` |
 | `UPSTASH_REDIS_REST_TOKEN` | Shared rate limit | |
@@ -210,7 +210,7 @@ This app is aimed at children, so be clear about where a question goes:
 - **Upstash Vector** receives the question's embedding (a list of numbers), not the text.
 - **Answer cache.** The answer text is stored for 5 minutes in Redis. Without Redis it is kept in server memory, where an expired answer is only removed when the same question comes in again or the server restarts. The key holds the class, the medium and a hash of the question, not the question itself.
 - **Rate limit.** A hash of the client IP is the rate-limit key. Upstash Redis keeps it for about two minutes. The in-memory fallback keeps it until the server restarts, or until more than 10,000 keys are stored and expired ones are cleared.
-- **Logs.** The server does not log questions or answers. Failures log one short line with the provider, the error type and the error message. Configuration problems log the variable name, never its value. Your host may keep its own request logs.
+- **Logs.** The server does not log questions or answers. Failures log one short line with the provider, the error type and the error message, with URLs and long token-like strings replaced by `<url>` and `<redacted>`. Configuration problems log the variable name, never its value. Your host may keep its own request logs.
 - **Browser.** The conversation stays in `localStorage` until the student clears it.
 - There are no analytics or tracking scripts in the app.
 

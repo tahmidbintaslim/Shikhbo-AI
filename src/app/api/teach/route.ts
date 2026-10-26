@@ -67,6 +67,7 @@ async function setCachedResponse(key: string, response: string): Promise<void> {
 // Every client is optional: a missing or malformed setting disables that
 // service (logged once, by name) instead of failing the module load.
 const config = readServiceConfig();
+for (const problem of config.problems) console.error(`[config] ${problem}`);
 const models = getModelConfig();
 const rateLimiter = createRateLimiter();
 
