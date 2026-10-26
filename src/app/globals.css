@@ -3,6 +3,8 @@
 
 /* 1. Register HeroUI */
 @plugin "../../hero.ts";
+/* Styles the Markdown answers (`prose` classes in ChatInterface). */
+@plugin "@tailwindcss/typography";
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
 /* 2. Custom Theme Variables */

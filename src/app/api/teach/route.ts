@@ -5,7 +5,8 @@ import { HfInference } from "@huggingface/inference";
 import { Index } from "@upstash/vector";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
-import { kv } from "@vercel/kv";
+import { createClient } from "@vercel/kv";
+import { CHAT_KEY_NAMES, createOptional, readServiceConfig } from "@/lib/config";
 import { getModelConfig } from "@/lib/models";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { retrieveContext } from "@/lib/retrieval";
@@ -21,9 +22,12 @@ import {
 } from "@/lib/teach";
 import { MAX_BODY_CHARS } from "@/lib/teach-limits";
 
-const KV_ENABLED = Boolean(
-    process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN
-);
+const kvUrl = process.env.KV_REST_API_URL?.trim();
+const kvToken = process.env.KV_REST_API_TOKEN?.trim();
+const kv = kvUrl && kvToken
+    ? createOptional("answer cache", "KV_REST_API_URL and KV_REST_API_TOKEN (an https REST URL)", () =>
+        createClient({ url: kvUrl, token: kvToken }))
+    : null;
 
 // Simple response caching (fallback for development)
 const responseCache = new Map<string, { response: string; timestamp: number }>();
@@ -31,7 +35,7 @@ const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 async function getCachedResponse(key: string): Promise<string | null> {
     try {
-        if (KV_ENABLED) {
+        if (kv) {
             const cached = await kv.get(`cache:${key}`);
             if (cached && typeof cached === "string") return cached;
         }
@@ -47,7 +51,7 @@ async function getCachedResponse(key: string): Promise<string | null> {
 
 async function setCachedResponse(key: string, response: string): Promise<void> {
     try {
-        if (KV_ENABLED) {
+        if (kv) {
             await kv.set(`cache:${key}`, response, { ex: CACHE_TTL / 1000 });
         } else {
             responseCache.set(key, { response, timestamp: Date.now() });
@@ -60,28 +64,44 @@ async function setCachedResponse(key: string, response: string): Promise<void> {
 // ---------------------------------------------------------
 // 1. SETUP CLIENTS
 // ---------------------------------------------------------
+// Every client is optional: a missing or malformed setting disables that
+// service (logged once, by name) instead of failing the module load.
+const config = readServiceConfig();
+for (const problem of config.problems) console.error(`[config] ${problem}`);
 const models = getModelConfig();
 const rateLimiter = createRateLimiter();
 
 // A. Vector DB (textbook passages)
-const index = process.env.UPSTASH_VECTOR_REST_URL && process.env.UPSTASH_VECTOR_REST_TOKEN
-    ? new Index({
-        url: process.env.UPSTASH_VECTOR_REST_URL,
-        token: process.env.UPSTASH_VECTOR_REST_TOKEN,
-    })
+const vector = config.vector;
+const index = vector
+    ? createOptional("textbook retrieval", "UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN", () =>
+        new Index({ url: vector.url, token: vector.token }))
     : null;
 
 // B. Hugging Face: embeddings for retrieval and the second chat provider
-const hf = process.env.HF_API_KEY ? new HfInference(process.env.HF_API_KEY) : null;
+const hfKey = config.hfKey;
+const hf = hfKey ? createOptional("Hugging Face", "HF_API_KEY", () => new HfInference(hfKey)) : null;
 
 // C. Chat providers
-const openrouter = process.env.OPENROUTER_API_KEY
-    ? createOpenRouter({ apiKey: process.env.OPENROUTER_API_KEY })
+const openrouterKey = config.openrouterKey;
+const openrouter = openrouterKey
+    ? createOptional("OpenRouter", "OPENROUTER_API_KEY", () => createOpenRouter({ apiKey: openrouterKey }))
     : null;
 
-const groq = process.env.GROQ_API_KEY
-    ? createGroq({ apiKey: process.env.GROQ_API_KEY })
+const groqKey = config.groqKey;
+const groq = groqKey
+    ? createOptional("Groq", "GROQ_API_KEY", () => createGroq({ apiKey: groqKey }))
     : null;
+
+const CHAT_CONFIGURED = Boolean(openrouter || hf || groq);
+if (!CHAT_CONFIGURED) {
+    console.error(`[config] no chat provider is configured: set at least one of ${CHAT_KEY_NAMES.join(", ")}`);
+}
+
+/** Error bodies carry a stable `code` so the UI can show its own wording. */
+function errorResponse(status: number, code: string, error: string, headers: HeadersInit = {}) {
+    return NextResponse.json({ error, code }, { status, headers });
+}
 
 export const maxDuration = 45; // Allow time for fallbacks
 
@@ -166,26 +186,35 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
 export async function POST(req: Request) {
     try {
         if (!(await rateLimiter.allow(hashKey(getClientIp(req.headers))))) {
-            return NextResponse.json(
-                { error: "Rate limit exceeded. Please try again later." },
-                { status: 429 }
+            return errorResponse(429, "rate_limited", "Rate limit exceeded. Please try again later.", {
+                "Retry-After": "60",
+            });
+        }
+
+        // Checked after the rate limit so an unconfigured deployment still
+        // throttles, and before any parsing work.
+        if (!CHAT_CONFIGURED) {
+            return errorResponse(
+                503,
+                "not_configured",
+                `The tutor is not set up on this server: no AI provider key is configured (${CHAT_KEY_NAMES.join(", ")}).`,
             );
         }
 
         const raw = await req.text();
         if (raw.length > MAX_BODY_CHARS) {
-            return NextResponse.json({ error: "Request too large" }, { status: 413 });
+            return errorResponse(413, "too_large", "Request too large");
         }
         let body: unknown;
         try {
             body = JSON.parse(raw);
         } catch {
-            return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+            return errorResponse(400, "invalid_input", "Invalid input");
         }
 
         const parsed = parseTeachRequest(body);
         if (!parsed.success) {
-            return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+            return errorResponse(400, "invalid_input", "Invalid input");
         }
         const { messages, grade, language } = parsed.data;
         const question = messages[messages.length - 1]?.content ?? "";
@@ -210,9 +239,11 @@ export async function POST(req: Request) {
 
         const result = await generateAnswer(buildSystemPrompt(grade, language, contextText), messages);
         if (!result) {
-            return NextResponse.json(
-                { error: "Sorry, Shikhbo AI is currently overloaded. Please try again in 1 minute." },
-                { status: 503 }
+            return errorResponse(
+                503,
+                "providers_unavailable",
+                "None of the AI providers returned an answer. Please try again in a minute.",
+                { "Retry-After": "60" },
             );
         }
 
@@ -220,9 +251,6 @@ export async function POST(req: Request) {
         return NextResponse.json({ result });
     } catch (error) {
         console.error(`[teach] request failed: ${errorSummary(error)}`);
-        return NextResponse.json(
-            { error: "Failed to process request" },
-            { status: 500 }
-        );
+        return errorResponse(500, "internal_error", "Failed to process request");
     }
 }

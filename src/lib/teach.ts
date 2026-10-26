@@ -130,6 +130,18 @@ export function stripThinkBlocks(text: string): string {
 }
 
 /**
+ * Hides values that may be secrets: any `scheme://...` URL (Node's fetch
+ * errors quote the request URL, credentials included) and any run of 24 or
+ * more token characters (API keys, base64 tokens). Model IDs survive, since
+ * their `-`, `.` and `:` break the run.
+ */
+export function redactSecrets(text: string): string {
+  return text
+    .replace(/[a-z][a-z0-9+.-]*:\/\/[^\s"'<>]+/gi, "<url>")
+    .replace(/[A-Za-z0-9+/_=]{24,}/g, "<redacted>");
+}
+
+/**
  * One short line for logs. Provider errors can carry the full request body
  * (the student's question), so never log the error object itself.
  */
@@ -137,7 +149,10 @@ export function errorSummary(err: unknown): string {
   if (err instanceof Error) {
     const status = (err as { statusCode?: unknown }).statusCode;
     const code = typeof status === "number" ? ` (${status})` : "";
-    return `${err.name}${code}: ${err.message}`.replace(/\s+/g, " ").slice(0, 160);
+    // The name is a class name (some are over 24 characters), so only the
+    // message is redacted, and before truncating, so a cut-off token cannot
+    // slip under the length threshold.
+    return `${err.name}${code}: ${redactSecrets(err.message)}`.replace(/\s+/g, " ").slice(0, 160);
   }
   return "unknown error";
 }

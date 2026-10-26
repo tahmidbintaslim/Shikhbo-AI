@@ -1,17 +1,7 @@
 {
-    "functions": {
-        "src/app/api/**/*.ts": {
-            "maxDuration": 30
-        }
-    },
-    "crons": [],
-    "regions": [
-        "sin1"
-    ],
-    "framework": "nextjs",
-    "buildCommand": "npm run build",
-    "installCommand": "npm install",
-    "env": {
-        "NODE_ENV": "production"
-    }
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "installCommand": "npm ci",
+  "buildCommand": "npm run build",
+  "regions": ["sin1"]
 }

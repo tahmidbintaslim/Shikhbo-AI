@@ -1,5 +1,6 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
+import { createOptional } from "./config";
 import { errorSummary } from "./teach";
 
 export const RATE_LIMIT = 10;
@@ -61,12 +62,20 @@ export function createRateLimiter(env: Env = process.env): RateLimiter {
     return { backend: "memory", allow: async (key) => memory(key) };
   }
 
-  const shared = new Ratelimit({
-    redis: new Redis(credentials),
-    limiter: Ratelimit.slidingWindow(RATE_LIMIT, `${RATE_WINDOW_MS / 1000} s`),
-    prefix: "shikhbo:ratelimit",
-    analytics: false,
-  });
+  const shared = createOptional(
+    "shared rate limit",
+    "UPSTASH_REDIS_REST_URL/TOKEN or KV_REST_API_URL/TOKEN (an https REST URL, not redis://)",
+    () =>
+      new Ratelimit({
+        redis: new Redis(credentials),
+        limiter: Ratelimit.slidingWindow(RATE_LIMIT, `${RATE_WINDOW_MS / 1000} s`),
+        prefix: "shikhbo:ratelimit",
+        analytics: false,
+      }),
+  );
+  if (!shared) {
+    return { backend: "memory", allow: async (key) => memory(key) };
+  }
 
   return {
     backend: "upstash",

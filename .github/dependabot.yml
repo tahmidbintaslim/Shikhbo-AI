@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Bangkok
+    open-pull-requests-limit: 5
+    groups:
+      # Patch and minor bumps arrive as one PR; majors stay separate so each
+      # can be checked on its own.
+      npm-minor-and-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      timezone: Asia/Bangkok
+    groups:
+      github-actions:
+        patterns: ["*"]

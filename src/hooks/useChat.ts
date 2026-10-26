@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { Message } from "@/types";
 import { generateId } from "@/lib/utils";
+import { errorText } from "@/lib/chat-errors";
 import { MAX_ASSISTANT_CHARS, recentTurns, type Language } from "@/lib/teach-limits";
 
 export type Locale = "en" | "bn";
@@ -11,11 +12,15 @@ const translations = {
         fetchError: "Error connecting to the teacher bot.",
         apiError: "Sorry, I couldn't find an answer.",
         rateLimited: "Too many questions in a short time. Please wait a minute and try again.",
+        notConfigured: "The tutor is not set up on this site yet, so it cannot answer questions right now.",
+        providersUnavailable: "The AI service did not answer. Please try again in a minute.",
     },
     bn: {
         fetchError: "শিক্ষক বট সংযোগ করতে ত্রুটি হয়েছে।",
         apiError: "দুঃখিত, আমি উত্তরটি খুঁজে পাচ্ছি না।",
         rateLimited: "অল্প সময়ে অনেক প্রশ্ন করা হয়েছে। এক মিনিট পরে আবার চেষ্টা করো।",
+        notConfigured: "এই সাইটে টিউটর এখনো চালু করা হয়নি, তাই এখন প্রশ্নের উত্তর দিতে পারছে না।",
+        providersUnavailable: "এআই সেবা থেকে উত্তর আসেনি। এক মিনিট পরে আবার চেষ্টা করো।",
     },
 };
 
@@ -82,9 +87,7 @@ export function useChat(locale: Locale) {
                 body: JSON.stringify({ messages: history, grade, language }),
             });
             const data = await res.json().catch(() => ({}));
-            const fallback = res.status === 429
-                ? translations[locale].rateLimited
-                : translations[locale].apiError;
+            const fallback = errorText(translations[locale], res.status, data.code);
             const assistantMessage: Message = {
                 id: generateId(),
                 content: (res.ok && typeof data.result === "string" && data.result) || fallback,
