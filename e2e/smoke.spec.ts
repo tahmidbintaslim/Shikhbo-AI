@@ -15,12 +15,19 @@ test("home page renders the tutor with Bangla as the default UI language", async
   await expect(page.getByRole("button", { name: "প্রশ্ন পাঠাও" })).toBeVisible();
 });
 
-test("the chat box follows the UI language picker", async ({ page }) => {
+test("the chat box follows the site language switch", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /Language/ }).click();
-  await page.getByRole("option", { name: "EN" }).click();
+  await page.getByRole("button", { name: "Switch the site to English" }).click();
   await expect(page.getByLabel("Chat input")).toHaveAttribute("placeholder", "Ask a question...");
   await expect(page.getByRole("button", { name: "Send message" })).toHaveText("Send");
+});
+
+test("only classes with indexed textbooks can be picked", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Switch the site to English" }).click();
+  await page.getByRole("button", { name: /Class 1/ }).first().click();
+  await expect(page.getByRole("option", { name: "Class 1", exact: true })).toBeEnabled();
+  await expect(page.getByRole("option", { name: "Class 2" })).toBeDisabled();
 });
 
 test("security headers are sent", async ({ request }) => {

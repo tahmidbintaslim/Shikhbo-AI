@@ -3,6 +3,12 @@
 
 export const GRADES = Array.from({ length: 12 }, (_, i) => i + 1);
 
+/**
+ * Classes whose textbooks are in the index (books/sources.json). The UI
+ * offers only these; add a class here once its books are ingested.
+ */
+export const INDEXED_GRADES: readonly number[] = [1];
+
 export const LANGUAGES = ["english", "bengali"] as const;
 export type Language = (typeof LANGUAGES)[number];
 

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChatProvider, useChatContext } from "@/components/ChatProvider";
 import type { Locale } from "@/hooks/useChat";
-import type { Language } from "@/lib/teach-limits";
+import { GRADES, INDEXED_GRADES, type Language } from "@/lib/teach-limits";
 import CONTENT, { SUBJECTS } from "@/data/landing-content";
 import { SimpleFooter } from "@/components/SimpleFooter";
 import { Card, CardBody } from "@heroui/card";
@@ -221,14 +221,19 @@ function Landing() {
   const brand = locale === "bn" ? "শিখবো AI" : "Shikhbo AI";
   const classLabel = locale === "bn" ? "শ্রেণি" : "Class";
   const heroLines = String(L?.hero?.title ?? "").split("\n");
-  const classOptions = Array.from({ length: 12 }, (_, i) => ({
-    id: `${i + 1}`,
-    label: locale === "bn" ? `শ্রেণি ${i + 1}` : `Class ${i + 1}`,
+  const soon = locale === "bn" ? "শীঘ্রই" : "coming soon";
+  const classOptions = GRADES.map((g) => ({
+    id: `${g}`,
+    label: locale === "bn" ? `শ্রেণি ${g}` : `Class ${g}`,
+    ready: INDEXED_GRADES.includes(g),
   }));
+  const disabledClasses = classOptions.filter((c) => !c.ready).map((c) => c.id);
 
+  // The textbook's medium (NCTB Bangla or English version), not the site language.
+  const mediumLabel = locale === "bn" ? "পাঠ্যবই" : "Textbook";
   const mediumOptions: { id: Language; label: string }[] = [
-    { id: "english", label: locale === "bn" ? "ইংরেজি" : "English" },
-    { id: "bengali", label: locale === "bn" ? "বাংলা" : "Bengali" },
+    { id: "bengali", label: locale === "bn" ? "বাংলা ভার্সন" : "Bangla version" },
+    { id: "english", label: locale === "bn" ? "ইংলিশ ভার্সন" : "English version" },
   ];
 
   const handleSubjectSelect = (subject: (typeof SUBJECTS)[number]) => {
@@ -270,6 +275,7 @@ function Landing() {
                 aria-label={classLabel}
                 size="sm"
                 selectedKeys={new Set([selectedClass])}
+                disabledKeys={disabledClasses}
                 onSelectionChange={(keys) => {
                   const next = Array.from(keys as Set<string>)[0];
                   if (next) setGrade(next);
@@ -286,12 +292,14 @@ function Landing() {
                 }}
               >
                 {classOptions.map((c) => (
-                  <SelectItem key={c.id}>{c.label}</SelectItem>
+                  <SelectItem key={c.id} textValue={c.label}>
+                    {c.ready ? c.label : `${c.label} · ${soon}`}
+                  </SelectItem>
                 ))}
               </Select>
 
               <Select
-                aria-label="Medium"
+                aria-label={mediumLabel}
                 size="sm"
                 selectedKeys={new Set([selectedLanguage])}
                 onSelectionChange={(keys) => {
@@ -299,7 +307,7 @@ function Landing() {
                   if (next === "english" || next === "bengali") setLanguage(next);
                 }}
                 variant="bordered"
-                className="w-full sm:w-32"
+                className="w-full sm:w-40"
                 classNames={{
                   trigger:
                     "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 dark:text-foreground px-3 py-2",
@@ -314,28 +322,15 @@ function Landing() {
                 ))}
               </Select>
 
-              <Select
-                aria-label="Language"
+              <Button
                 size="sm"
-                selectedKeys={new Set([locale])}
-                onSelectionChange={(keys) => {
-                  const next = Array.from(keys as Set<string>)[0];
-                  if (next) setLocale(next as Locale);
-                }}
                 variant="bordered"
-                className="w-28 sm:w-28"
-                classNames={{
-                  trigger:
-                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 px-3 py-2",
-                  value: "text-sm text-foreground",
-                  popoverContent:
-                    "bg-black/95 border border-white/25 text-white shadow-xl",
-                  listbox: "text-sm",
-                }}
+                aria-label={locale === "bn" ? "Switch the site to English" : "সাইট বাংলায় দেখুন"}
+                onPress={() => setLocale(locale === "bn" ? "en" : "bn")}
+                className="rounded-lg border-white/40 dark:border-white/25 text-foreground"
               >
-                <SelectItem key="en">EN</SelectItem>
-                <SelectItem key="bn">BN</SelectItem>
-              </Select>
+                {locale === "bn" ? "English" : "বাংলা"}
+              </Button>
 
               <ThemeSwitcher />
             </div>
@@ -415,12 +410,13 @@ function Landing() {
                       <Card
                         // HeroUI Card ignores onClick unless isPressable is set;
                         // onPress also covers Enter and Space.
-                        isPressable
+                        isPressable={s.indexed}
+                        isDisabled={!s.indexed}
                         onPress={() => handleSubjectSelect(s)}
                         aria-label={
                           locale === "bn"
-                            ? `${s.name.bn} - শ্রেণি ${selectedClass} সহায়তা`
-                            : `${s.name.en} - Class ${selectedClass} support`
+                            ? `${s.name.bn} - ${s.indexed ? `শ্রেণি ${selectedClass} সহায়তা` : soon}`
+                            : `${s.name.en} - ${s.indexed ? `Class ${selectedClass} support` : soon}`
                         }
                         className="glass-card-hover p-0 rounded-2xl w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
                       >
@@ -434,9 +430,11 @@ function Landing() {
                             {locale === "bn" ? s.name.bn : s.name.en}
                           </div>
                           <div className="text-xs text-default-500 dark:text-default-400 mt-1">
-                            {locale === "bn"
-                              ? `শ্রেণি ${selectedClass} সহায়তা`
-                              : `Class ${selectedClass} support`}
+                            {!s.indexed
+                              ? soon
+                              : locale === "bn"
+                                ? `শ্রেণি ${selectedClass} সহায়তা`
+                                : `Class ${selectedClass} support`}
                           </div>
                         </CardBody>
                       </Card>

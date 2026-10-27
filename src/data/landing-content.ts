@@ -1,12 +1,15 @@
 import { BookOpen, Calculator, Cpu, FlaskConical, Globe } from "lucide-react";
 
+// `indexed`: the subject's textbooks are in the index for the indexed classes
+// (books/sources.json: Class 1 Bangla, English and Math). The others show as
+// "coming soon" and cannot be picked.
 export const SUBJECTS = [
-  { id: "math", name: { bn: "গণিত", en: "General Math" }, icon: Calculator, color: "text-blue-400" },
-  { id: "physics", name: { bn: "পদার্থবিজ্ঞান", en: "Physics" }, icon: FlaskConical, color: "text-purple-400" },
-  { id: "chemistry", name: { bn: "রসায়ন", en: "Chemistry" }, icon: FlaskConical, color: "text-teal-400" },
-  { id: "english", name: { bn: "ইংরেজি", en: "English" }, icon: Globe, color: "text-pink-400" },
-  { id: "ict", name: { bn: "তথ্য ও প্রযুক্তি", en: "ICT" }, icon: Cpu, color: "text-cyan-400" },
-  { id: "bangla", name: { bn: "বাংলা", en: "Bangla" }, icon: BookOpen, color: "text-rose-400" },
+  { id: "math", name: { bn: "গণিত", en: "Math" }, icon: Calculator, color: "text-blue-400", indexed: true },
+  { id: "bangla", name: { bn: "বাংলা", en: "Bangla" }, icon: BookOpen, color: "text-rose-400", indexed: true },
+  { id: "english", name: { bn: "ইংরেজি", en: "English" }, icon: Globe, color: "text-pink-400", indexed: true },
+  { id: "physics", name: { bn: "পদার্থবিজ্ঞান", en: "Physics" }, icon: FlaskConical, color: "text-purple-400", indexed: false },
+  { id: "chemistry", name: { bn: "রসায়ন", en: "Chemistry" }, icon: FlaskConical, color: "text-teal-400", indexed: false },
+  { id: "ict", name: { bn: "তথ্য ও প্রযুক্তি", en: "ICT" }, icon: Cpu, color: "text-cyan-400", indexed: false },
 ];
 
 export const CONTENT = {
