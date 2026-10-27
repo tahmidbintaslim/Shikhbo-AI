@@ -9,10 +9,11 @@ export const CHAT_KEY_NAMES = ["OPENROUTER_API_KEY", "HF_API_KEY", "GROQ_API_KEY
 
 export interface ServiceConfig {
   openrouterKey: string | null;
-  /** Hugging Face: the second chat provider and the question embeddings. */
+  /** Hugging Face: the second chat provider. */
   hfKey: string | null;
   groqKey: string | null;
-  vector: { url: string; token: string } | null;
+  /** The shikhbo-api Edge Function: textbook search, answer cache, shared rate limit. */
+  store: { url: string; secret: string } | null;
   /**
    * Settings that are set but cannot work, as log lines that name the
    * variable. Never the value: a token pasted into a URL variable is common.
@@ -26,10 +27,9 @@ function value(raw: string | undefined): string | null {
 }
 
 /**
- * True for an `https://` URL with no user name or password, the only shape an
- * Upstash REST endpoint has. The Upstash Vector client accepts any string and
- * fails on every query instead, and Node's fetch error quotes the URL, so a
- * token or a `redis://user:password@...` URL would reach the logs.
+ * True for an `https://` URL with no user name or password, the only shape
+ * the store endpoint has. Node's fetch error quotes the URL, so a secret
+ * pasted into the URL variable would otherwise reach the logs.
  */
 export function isRestUrl(raw: string): boolean {
   let url: URL;
@@ -42,16 +42,16 @@ export function isRestUrl(raw: string): boolean {
 }
 
 export function readServiceConfig(env: Env = process.env): ServiceConfig {
-  const vectorUrl = value(env.UPSTASH_VECTOR_REST_URL);
-  const vectorToken = value(env.UPSTASH_VECTOR_REST_TOKEN);
+  const storeUrl = value(env.SHIKHBO_STORE_URL);
+  const storeSecret = value(env.SHIKHBO_STORE_SECRET);
   const problems: string[] = [];
-  let vector: ServiceConfig["vector"] = null;
-  if (vectorUrl && vectorToken) {
-    if (isRestUrl(vectorUrl)) {
-      vector = { url: vectorUrl, token: vectorToken };
+  let store: ServiceConfig["store"] = null;
+  if (storeUrl && storeSecret) {
+    if (isRestUrl(storeUrl)) {
+      store = { url: storeUrl, secret: storeSecret };
     } else {
       problems.push(
-        "textbook retrieval disabled (not an https REST URL without credentials), check UPSTASH_VECTOR_REST_URL",
+        "textbook retrieval, answer cache and shared rate limit disabled (not an https URL without credentials), check SHIKHBO_STORE_URL",
       );
     }
   }
@@ -59,7 +59,7 @@ export function readServiceConfig(env: Env = process.env): ServiceConfig {
     openrouterKey: value(env.OPENROUTER_API_KEY),
     hfKey: value(env.HF_API_KEY),
     groqKey: value(env.GROQ_API_KEY),
-    vector,
+    store,
     problems,
   };
 }
@@ -68,7 +68,7 @@ export interface ConfigStatus {
   /** True when at least one chat provider key is set. */
   ok: boolean;
   chatProviders: number;
-  /** Textbook lookup needs the vector index and the Hugging Face key. */
+  /** Textbook lookup, the answer cache and the shared rate limit need the store. */
   textbookRetrieval: boolean;
 }
 
@@ -78,15 +78,14 @@ export function configStatus(config: ServiceConfig): ConfigStatus {
   return {
     ok: chatProviders > 0,
     chatProviders,
-    textbookRetrieval: Boolean(config.vector && config.hfKey),
+    textbookRetrieval: Boolean(config.store),
   };
 }
 
 /**
  * Builds a client from config, or returns null and logs which setting to
- * check. A malformed value (a `redis://` URL where an https REST URL is
- * expected, say) must not throw while the route module loads: that turns
- * every request into a bare HTTP 500.
+ * check. A malformed value must not throw while the route module loads:
+ * that turns every request into a bare HTTP 500.
  */
 export function createOptional<T>(label: string, settings: string, build: () => T): T | null {
   try {

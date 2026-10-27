@@ -9,7 +9,6 @@ import { useChatContext } from "@/components/ChatProvider";
 import { MAX_USER_CHARS } from "@/lib/teach-limits";
 import { Button } from "@heroui/button";
 import { Textarea } from "@heroui/input";
-import { Accordion, AccordionItem } from "@heroui/accordion";
 import { Avatar } from "@heroui/avatar";
 import { User, Cpu } from "lucide-react";
 
@@ -20,13 +19,11 @@ import { User, Cpu } from "lucide-react";
 // Labels follow the UI language picked in the header (Bangla by default).
 const LABELS = {
   en: {
-    actions: "Actions",
-    moreActions: "More actions",
-    clear: "Clear",
+    clear: "New chat",
     clearLabel: "Clear conversation",
-    export: "Export",
+    export: "Save",
     exportLabel: "Export conversation",
-    empty: "Start a conversation",
+    empty: "Ask anything from your Class 1 books, or try one of these:",
     inputLabel: "Chat input",
     placeholder: "Ask a question...",
     send: "Send",
@@ -34,13 +31,11 @@ const LABELS = {
     sending: "Sending...",
   },
   bn: {
-    actions: "অপশন",
-    moreActions: "আরও অপশন",
-    clear: "মুছে ফেলো",
+    clear: "নতুন চ্যাট",
     clearLabel: "কথোপকথন মুছে ফেলো",
-    export: "এক্সপোর্ট",
+    export: "সেভ করো",
     exportLabel: "কথোপকথন এক্সপোর্ট করো",
-    empty: "কথোপকথন শুরু করো",
+    empty: "প্রথম শ্রেণির বই থেকে যেকোনো প্রশ্ন করো, অথবা এগুলো চেষ্টা করো:",
     inputLabel: "প্রশ্ন লেখার ঘর",
     placeholder: "একটি প্রশ্ন লেখো...",
     send: "পাঠাও",
@@ -49,9 +44,17 @@ const LABELS = {
   },
 } as const;
 
+// Starter questions per textbook medium; each one is answerable from the
+// indexed Class 1 books.
+const STARTERS = {
+  bengali: ["৩ আর ৪ যোগ করলে কত হয়?", "স্বরবর্ণ কয়টি?", "১০ থেকে ৪ বিয়োগ করলে কত থাকে?"],
+  english: ["What is 3 + 4?", "How do I say hello in English?", "Count from 1 to 10 with me"],
+} as const;
+
 export default function ChatInterface() {
   const {
     locale,
+    language,
     messages,
     input,
     setInput,
@@ -71,37 +74,30 @@ export default function ChatInterface() {
   return (
     <div className="w-full h-full flex flex-col bg-background text-foreground rounded-2xl">
       <div className="flex justify-end p-2 border-b border-white/10">
-        <Accordion isCompact className="w-fit">
-          <AccordionItem
-            key="1"
-            aria-label={t.moreActions}
-            title={t.actions}
+        <div className="flex gap-1">
+          <Button
+            type="button"
+            variant="light"
+            size="sm"
+            onPress={clearMessages}
+            isDisabled={messages.length === 0}
+            aria-label={t.clearLabel}
             className="text-xs"
           >
-            <div className="flex flex-col">
-              <Button
-                type="button"
-                variant="light"
-                size="sm"
-                onClick={clearMessages}
-                aria-label={t.clearLabel}
-                className="text-xs hover:underline"
-              >
-                {t.clear}
-              </Button>
-              <Button
-                type="button"
-                variant="light"
-                size="sm"
-                onClick={exportConversation}
-                aria-label={t.exportLabel}
-                className="text-xs hover:underline"
-              >
-                {t.export}
-              </Button>
-            </div>
-          </AccordionItem>
-        </Accordion>
+            {t.clear}
+          </Button>
+          <Button
+            type="button"
+            variant="light"
+            size="sm"
+            onPress={exportConversation}
+            isDisabled={messages.length === 0}
+            aria-label={t.exportLabel}
+            className="text-xs"
+          >
+            {t.export}
+          </Button>
+        </div>
       </div>
       <div
         ref={scrollRef}
@@ -109,8 +105,25 @@ export default function ChatInterface() {
         id="chat-messages"
       >
         {messages.length === 0 ? (
-          <div className="flex h-full items-center justify-center text-sm text-foreground/60">
-            {t.empty}
+          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+            <p className="text-sm text-foreground/70 max-w-xs">{t.empty}</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {STARTERS[language].map((q) => (
+                <Button
+                  key={q}
+                  size="sm"
+                  radius="full"
+                  variant="bordered"
+                  className="border-white/25 text-foreground"
+                  onPress={() => {
+                    setInput(q);
+                    document.getElementById("chat-input")?.focus();
+                  }}
+                >
+                  {q}
+                </Button>
+              ))}
+            </div>
           </div>
         ) : (
           messages.map((m) => (

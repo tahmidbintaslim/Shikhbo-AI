@@ -1,17 +1,12 @@
-import { buildVectorFilter, errorSummary, type Language } from "./teach";
+import type { TextbookMatch } from "./store";
+import { errorSummary, type Language } from "./teach";
 
 export const RETRIEVAL_TIMEOUT_MS = 5000;
 export const RETRIEVAL_TOP_K = 5;
 
-export interface RetrievalMatch {
-  metadata?: Record<string, unknown> | undefined;
-}
-
 export interface RetrievalDeps {
-  /** Turns the question into a vector. Should honor the abort signal. */
-  embed: (text: string, signal: AbortSignal) => Promise<unknown>;
-  /** Nearest-neighbour search in the textbook index. */
-  search: (vector: number[], filter: string, topK: number) => Promise<RetrievalMatch[]>;
+  /** Textbook pages nearest the question for this class and medium. Should honor the abort signal. */
+  search: (query: string, grade: number, language: Language, topK: number, signal: AbortSignal) => Promise<TextbookMatch[]>;
 }
 
 export interface RetrievalQuery {
@@ -27,31 +22,21 @@ class RetrievalTimeoutError extends Error {
   }
 }
 
-/** Feature extraction may return a flat vector or a batch of one. */
-export function toVector(output: unknown): number[] {
-  if (Array.isArray(output) && output.length > 0) {
-    if (output.every((v) => typeof v === "number")) return output as number[];
-    const first: unknown = output[0];
-    if (Array.isArray(first) && first.length > 0 && first.every((v) => typeof v === "number")) {
-      return first as number[];
-    }
-  }
-  throw new TypeError("embedding response has an unexpected shape");
+/** "Class 1 Math_compressed.pdf, page 12" -> "Class 1 Math, page 12" */
+export function sourceLabel(source: string): string {
+  return source.replace(/(_compressed)?( \(\d+\))?\.pdf/i, "").trim();
 }
 
-export function formatContext(matches: RetrievalMatch[]): string {
+export function formatContext(matches: Array<Partial<TextbookMatch>>): string {
   return matches
-    .filter((m) => typeof m.metadata?.text === "string" && m.metadata.text.trim() !== "")
-    .map((m) => {
-      const source = typeof m.metadata?.source === "string" ? m.metadata.source : "textbook";
-      return `[Source: ${source}]: ${m.metadata?.text as string}`;
-    })
+    .filter((m) => typeof m.text === "string" && m.text.trim() !== "")
+    .map((m) => `[Source: ${typeof m.source === "string" && m.source ? sourceLabel(m.source) : "textbook"}]: ${m.text as string}`)
     .join("\n\n");
 }
 
 /**
  * Textbook passages for the question, or "" when retrieval fails or is slow.
- * Never throws: a broken embedding provider or vector index must not turn
+ * Never throws: a broken or unreachable store must not turn
  * into a failed answer, the tutor just answers without textbook context.
  */
 export async function retrieveContext(
@@ -69,10 +54,10 @@ export async function retrieveContext(
   });
 
   const run = async () => {
-    const filter = buildVectorFilter(grade, language);
-    const vector = toVector(await deps.embed(query, controller.signal));
-    const matches = await deps.search(vector, filter, RETRIEVAL_TOP_K);
-    return formatContext(matches);
+    if (!Number.isInteger(grade) || grade < 1 || grade > 12) {
+      throw new RangeError("grade must be an integer from 1 to 12");
+    }
+    return formatContext(await deps.search(query, grade, language, RETRIEVAL_TOP_K, controller.signal));
   };
 
   try {

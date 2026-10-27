@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
-  "description": "Prototype homework tutor for Bangladeshi students that answers from NCTB textbook pages, built with Next.js, Upstash Vector and hosted LLMs",
+  "description": "Prototype homework tutor for Bangladeshi students that answers from NCTB textbook pages, built with Next.js, Supabase pgvector and hosted LLMs",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -65,10 +65,6 @@
     "@openrouter/ai-sdk-provider": "^2.1.1",
     "@react-aria/ssr": "^3.9.10",
     "@react-aria/visually-hidden": "^3.8.29",
-    "@upstash/ratelimit": "^2.2.0",
-    "@upstash/redis": "^1.39.0",
-    "@upstash/vector": "^1.2.2",
-    "@vercel/kv": "^3.0.0",
     "ai": "^6.0.57",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
@@ -113,7 +109,7 @@
     "bangladesh",
     "nextjs",
     "typescript",
-    "upstash"
+    "supabase"
   ],
   "author": "Tahmid Bin Taslim Rafi",
   "license": "CC-BY-NC-SA-4.0",

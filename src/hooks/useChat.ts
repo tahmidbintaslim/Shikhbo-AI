@@ -45,7 +45,7 @@ export function useChat(locale: Locale) {
     const [input, setInput] = useState("");
     const [loading, setLoading] = useState(false);
     const [grade, setGrade] = useState("1");
-    const [language, setLanguage] = useState<Language>("english");
+    const [language, setLanguage] = useState<Language>("bengali");
 
     const scrollRef = useRef<HTMLDivElement>(null);
 

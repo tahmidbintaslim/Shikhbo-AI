@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChatProvider, useChatContext } from "@/components/ChatProvider";
 import type { Locale } from "@/hooks/useChat";
-import type { Language } from "@/lib/teach-limits";
+import { GRADES, INDEXED_GRADES } from "@/lib/teach-limits";
 import CONTENT, { SUBJECTS } from "@/data/landing-content";
 import { SimpleFooter } from "@/components/SimpleFooter";
 import { Card, CardBody } from "@heroui/card";
@@ -209,7 +209,6 @@ function Landing() {
     setLocale,
     grade: selectedClass,
     setGrade,
-    language: selectedLanguage,
     setLanguage,
     setInput,
   } = useChatContext();
@@ -221,15 +220,17 @@ function Landing() {
   const brand = locale === "bn" ? "শিখবো AI" : "Shikhbo AI";
   const classLabel = locale === "bn" ? "শ্রেণি" : "Class";
   const heroLines = String(L?.hero?.title ?? "").split("\n");
-  const classOptions = Array.from({ length: 12 }, (_, i) => ({
-    id: `${i + 1}`,
-    label: locale === "bn" ? `শ্রেণি ${i + 1}` : `Class ${i + 1}`,
+  const soon = locale === "bn" ? "শীঘ্রই" : "coming soon";
+  const num = (n: number | string) =>
+    locale === "bn" ? String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)] ?? d) : String(n);
+  const focusChat = () => document.getElementById(chatInputId)?.focus();
+  const classOptions = GRADES.map((g) => ({
+    id: `${g}`,
+    label: locale === "bn" ? `শ্রেণি ${num(g)}` : `Class ${g}`,
+    ready: INDEXED_GRADES.includes(g),
   }));
+  const disabledClasses = classOptions.filter((c) => !c.ready).map((c) => c.id);
 
-  const mediumOptions: { id: Language; label: string }[] = [
-    { id: "english", label: locale === "bn" ? "ইংরেজি" : "English" },
-    { id: "bengali", label: locale === "bn" ? "বাংলা" : "Bengali" },
-  ];
 
   const handleSubjectSelect = (subject: (typeof SUBJECTS)[number]) => {
     const prompt =
@@ -270,6 +271,7 @@ function Landing() {
                 aria-label={classLabel}
                 size="sm"
                 selectedKeys={new Set([selectedClass])}
+                disabledKeys={disabledClasses}
                 onSelectionChange={(keys) => {
                   const next = Array.from(keys as Set<string>)[0];
                   if (next) setGrade(next);
@@ -286,56 +288,27 @@ function Landing() {
                 }}
               >
                 {classOptions.map((c) => (
-                  <SelectItem key={c.id}>{c.label}</SelectItem>
+                  <SelectItem key={c.id} textValue={c.label}>
+                    {c.ready ? c.label : `${c.label} · ${soon}`}
+                  </SelectItem>
                 ))}
               </Select>
 
-              <Select
-                aria-label="Medium"
-                size="sm"
-                selectedKeys={new Set([selectedLanguage])}
-                onSelectionChange={(keys) => {
-                  const next = Array.from(keys as Set<string>)[0];
-                  if (next === "english" || next === "bengali") setLanguage(next);
-                }}
-                variant="bordered"
-                className="w-full sm:w-32"
-                classNames={{
-                  trigger:
-                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 dark:text-foreground px-3 py-2",
-                  value: "text-foreground",
-                  popoverContent:
-                    "bg-black/95 border border-white/25 text-white shadow-xl",
-                  listbox: "text-sm",
-                }}
-              >
-                {mediumOptions.map((m) => (
-                  <SelectItem key={m.id}>{m.label}</SelectItem>
-                ))}
-              </Select>
 
-              <Select
-                aria-label="Language"
+              <Button
                 size="sm"
-                selectedKeys={new Set([locale])}
-                onSelectionChange={(keys) => {
-                  const next = Array.from(keys as Set<string>)[0];
-                  if (next) setLocale(next as Locale);
-                }}
                 variant="bordered"
-                className="w-28 sm:w-28"
-                classNames={{
-                  trigger:
-                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 px-3 py-2",
-                  value: "text-sm text-foreground",
-                  popoverContent:
-                    "bg-black/95 border border-white/25 text-white shadow-xl",
-                  listbox: "text-sm",
+                aria-label={locale === "bn" ? "Switch to English and the English version books" : "বাংলা ও বাংলা ভার্সন বইয়ে যাও"}
+                onPress={() => {
+                  // One switch: the site language is also the textbook medium.
+                  const next = locale === "bn" ? "en" : "bn";
+                  setLocale(next);
+                  setLanguage(next === "bn" ? "bengali" : "english");
                 }}
+                className="rounded-lg border-white/40 dark:border-white/25 text-foreground"
               >
-                <SelectItem key="en">EN</SelectItem>
-                <SelectItem key="bn">BN</SelectItem>
-              </Select>
+                {locale === "bn" ? "English" : "বাংলা"}
+              </Button>
 
               <ThemeSwitcher />
             </div>
@@ -381,11 +354,8 @@ function Landing() {
                   {L?.hero?.subtitle}
                 </p>
                 <div className="flex flex-wrap gap-3 mt-6">
-                  <Button className="glass-btn-primary" radius="full">
+                  <Button className="glass-btn-primary" radius="full" onPress={focusChat}>
                     {L?.hero?.cta}
-                  </Button>
-                  <Button className="glass-btn" radius="full">
-                    {locale === "bn" ? "পাঠ্যক্রম" : "Syllabus"}
                   </Button>
                 </div>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -403,7 +373,7 @@ function Landing() {
               </CardBody>
             </Card>
 
-            <div className="mt-8">
+            <div className="mt-8" id="subjects">
               <h3 className="text-lg font-semibold mb-4">
                 {L?.syllabus?.title}
               </h3>
@@ -415,12 +385,13 @@ function Landing() {
                       <Card
                         // HeroUI Card ignores onClick unless isPressable is set;
                         // onPress also covers Enter and Space.
-                        isPressable
+                        isPressable={s.indexed}
+                        isDisabled={!s.indexed}
                         onPress={() => handleSubjectSelect(s)}
                         aria-label={
                           locale === "bn"
-                            ? `${s.name.bn} - শ্রেণি ${selectedClass} সহায়তা`
-                            : `${s.name.en} - Class ${selectedClass} support`
+                            ? `${s.name.bn} - ${s.indexed ? `শ্রেণি ${num(selectedClass)} সহায়তা` : soon}`
+                            : `${s.name.en} - ${s.indexed ? `Class ${selectedClass} support` : soon}`
                         }
                         className="glass-card-hover p-0 rounded-2xl w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
                       >
@@ -434,9 +405,11 @@ function Landing() {
                             {locale === "bn" ? s.name.bn : s.name.en}
                           </div>
                           <div className="text-xs text-default-500 dark:text-default-400 mt-1">
-                            {locale === "bn"
-                              ? `শ্রেণি ${selectedClass} সহায়তা`
-                              : `Class ${selectedClass} support`}
+                            {!s.indexed
+                              ? soon
+                              : locale === "bn"
+                                ? `শ্রেণি ${num(selectedClass)} সহায়তা`
+                                : `Class ${selectedClass} support`}
                           </div>
                         </CardBody>
                       </Card>
