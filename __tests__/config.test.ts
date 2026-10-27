@@ -26,6 +26,13 @@ describe("service config", () => {
         const urlOnly = readServiceConfig({ SHIKHBO_STORE_URL: "https://p.supabase.co/functions/v1/shikhbo-api" });
         expect(urlOnly.store).toBeNull();
         expect(configStatus(urlOnly).textbookRetrieval).toBe(false);
+        expect(urlOnly.problems.join(" ")).toContain("SHIKHBO_STORE_SECRET is not set");
+
+        const secretOnly = readServiceConfig({ SHIKHBO_STORE_SECRET: "zz-secret-value" });
+        expect(secretOnly.store).toBeNull();
+        expect(secretOnly.problems.join(" ")).toContain("SHIKHBO_STORE_URL is not set");
+        expect(secretOnly.problems.join(" ")).not.toContain("zz-secret-value");
+        expect(readServiceConfig({}).problems).toEqual([]);
 
         const full = readServiceConfig({
             SHIKHBO_STORE_URL: "https://p.supabase.co/functions/v1/shikhbo-api",

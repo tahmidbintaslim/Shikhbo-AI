@@ -39,6 +39,11 @@ export interface RateLimiter {
  * The shared fixed-window limit in Supabase (through the store) when one is
  * configured, so every serverless instance counts together; the in-memory
  * limit otherwise, and whenever a store call fails.
+ *
+ * A fixed window lets a client spend a full window's budget just before the
+ * boundary and again just after it, so the worst-case burst is twice
+ * RATE_LIMIT. Accepted: the limit guards provider credits, not latency, and
+ * the Upstash sliding window this replaced is gone.
  */
 export function createRateLimiter(store: Store | null): RateLimiter {
   const memory = createMemoryLimiter();

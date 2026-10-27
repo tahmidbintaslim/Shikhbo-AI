@@ -53,8 +53,12 @@ Deno.serve(async (req) => {
   const secret = req.headers.get("x-shikhbo-secret") ?? "";
   try {
     await sql`select shikhbo.check_secret(${secret})`;
-  } catch {
-    return json({ error: "not allowed" }, 401);
+  } catch (error) {
+    // check_secret raises 42501 for a wrong secret; anything else is the
+    // database being unreachable or broken, not the caller's fault.
+    if ((error as { code?: string }).code === "42501") return json({ error: "not allowed" }, 401);
+    console.error("[shikhbo-api] secret check failed:", error instanceof Error ? error.message : error);
+    return json({ error: "store unavailable" }, 503);
   }
 
   let body: Record<string, unknown>;
@@ -70,16 +74,16 @@ Deno.serve(async (req) => {
         const vector = await embed(str(body.query, "query", 2_000));
         const rows = await sql`
           select source, text, similarity
-          from public.shikhbo_match_pages(${vector}::extensions.vector, ${int(body.grade, "grade", 1, 12)},
+          from shikhbo.match_pages(${vector}::extensions.vector, ${int(body.grade, "grade", 1, 12)},
             ${medium(body.medium)}, ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
         return json({ matches: rows });
       }
       case "cache_get": {
-        const [row] = await sql`select public.shikhbo_cache_get(${secret}, ${str(body.key, "key", 200)}) as response`;
+        const [row] = await sql`select shikhbo.cache_get(${secret}, ${str(body.key, "key", 200)}) as response`;
         return json({ response: row?.response ?? null });
       }
       case "cache_set": {
-        await sql`select public.shikhbo_cache_set(${secret}, ${str(body.key, "key", 200)},
+        await sql`select shikhbo.cache_set(${secret}, ${str(body.key, "key", 200)},
           ${str(body.response, "response", 50_000)}, ${int(body.ttlSeconds, "ttlSeconds", 1, 86_400)})`;
         // Expired answers are not kept.
         await sql`delete from shikhbo.answer_cache where expires_at < now()`;
@@ -87,7 +91,7 @@ Deno.serve(async (req) => {
       }
       case "rate_limit": {
         const windowSeconds = int(body.windowSeconds, "windowSeconds", 1, 86_400);
-        const [row] = await sql`select public.shikhbo_rate_limit_hit(${secret}, ${str(body.key, "key", 200)},
+        const [row] = await sql`select shikhbo.rate_limit_hit(${secret}, ${str(body.key, "key", 200)},
           ${int(body.limit, "limit", 1, 10_000)}, ${windowSeconds}) as allowed`;
         // A counter is dropped once its window has been over for one more window.
         await sql`delete from shikhbo.rate_limit where window_start < now() - make_interval(secs => ${2 * windowSeconds})`;
@@ -96,7 +100,7 @@ Deno.serve(async (req) => {
       case "upsert_page": {
         const text = str(body.text, "text");
         const vector = await embed(text);
-        await sql`select public.shikhbo_upsert_page(${secret}, ${str(body.id, "id", 300)},
+        await sql`select shikhbo.upsert_page(${secret}, ${str(body.id, "id", 300)},
           ${int(body.grade, "grade", 1, 12)}, ${medium(body.medium)}, ${str(body.source, "source", 300)},
           ${text}, ${vector}::extensions.vector)`;
         return json({ ok: true });

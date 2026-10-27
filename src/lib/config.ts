@@ -54,6 +54,10 @@ export function readServiceConfig(env: Env = process.env): ServiceConfig {
         "textbook retrieval, answer cache and shared rate limit disabled (not an https URL without credentials), check SHIKHBO_STORE_URL",
       );
     }
+  } else if (storeUrl || storeSecret) {
+    problems.push(
+      `textbook retrieval, answer cache and shared rate limit disabled: ${storeUrl ? "SHIKHBO_STORE_SECRET" : "SHIKHBO_STORE_URL"} is not set (both are needed)`,
+    );
   }
   return {
     openrouterKey: value(env.OPENROUTER_API_KEY),

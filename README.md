@@ -111,7 +111,7 @@ The default model IDs were checked against each provider's model list on 2026-10
 
 The textbooks are not stored in this repository. `books/sources.json` lists each file with its NCTB download link, a mirror, and a SHA-256 checksum.
 
-1. Set up the store in a Supabase project: run `supabase/migrations/20261026000000_shikhbo_schema.sql` in the SQL editor, deploy `supabase/functions/shikhbo-api` with JWT verification off (it checks the secret itself), and store the SHA-256 of a random secret in `shikhbo.app_secret` (the migration's header has the statement).
+1. Set up the store in a Supabase project: in the SQL editor run `supabase/migrations/20261026000000_shikhbo_schema.sql` and `20261027000000_shikhbo_private_functions.sql`, then deploy `supabase/functions/shikhbo-api` (`supabase/config.toml` keeps JWT verification off; the function checks the secret itself), then run `20261027000001_drop_public_store_functions.sql`. On an existing install keep that order: the drop must come after the new function is live, and store the SHA-256 of a random secret in `shikhbo.app_secret` (the migration's header has the statement).
 2. Install Ghostscript so the `gs` command is on your `PATH`. The script uses it to turn PDF pages into images.
 3. Put `SHIKHBO_STORE_URL` and `SHIKHBO_STORE_SECRET` in `.env.local`.
 4. Download the books and check their hashes:
