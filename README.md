@@ -195,7 +195,7 @@ This is a prototype, not a product in use.
 
 ## Limitations
 
-- Only four Class 1 textbooks are indexed (see `books/sources.json`). The class picker goes up to 12 and the subject cards include Physics, Chemistry and ICT, but there is no textbook data for them.
+- Only four Class 1 textbooks are indexed (see `books/sources.json`). Classes 2-12 and the Physics, Chemistry and ICT cards show "coming soon" and cannot be picked until their books are ingested (`INDEXED_GRADES` in `src/lib/teach-limits.ts`).
 - Bangla retrieval is weak. The embedding model is English-only, and each OCR'd page is embedded as one chunk, so long pages are truncated.
 - The cache key covers only the latest question. A short follow-up such as "explain more" can get an answer cached from another conversation within 5 minutes.
 - Answers arrive in one piece (no streaming), and nothing checks them. The model can be wrong, and there is no content moderation.
