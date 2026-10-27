@@ -198,7 +198,7 @@ describe("retrieval", () => {
             { source: "x.pdf", text: " ", similarity: 0.1 },
         ]);
         const context = await retrieveContext(query, { search });
-        expect(context).toBe("[Source: Class 1 Math.pdf, page 4]: [Page: 4] Two plus three is five.");
+        expect(context).toBe("[Source: Class 1 Math, page 4]: [Page: 4] Two plus three is five.");
         const [q, grade, language, topK] = search.mock.calls[0] as unknown as [string, number, string, number];
         expect([q, grade, language, topK]).toEqual(["What is 2 + 3?", 1, "english", 5]);
     });

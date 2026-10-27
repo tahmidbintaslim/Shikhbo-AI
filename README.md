@@ -47,7 +47,7 @@ The app is a single Next.js 16 page plus `POST /api/teach` and `GET /api/health`
 3. **Validation.** A zod schema accepts `user` and `assistant` turns only, keeps the last 10, requires an integer class from 1 to 12 and a medium of `english` or `bengali`, and caps lengths. HTML tags are stripped from questions.
 4. **Answer cache.** An exact-match cache for 5 minutes, keyed on class, medium and a SHA-256 hash of the latest question. It uses Supabase when the store is configured, otherwise server memory.
 5. **Retrieval.** The question goes to the `shikhbo-api` Supabase Edge Function, which embeds it with Supabase's built-in `gte-small` model (384 dimensions) and returns the 5 nearest pages for the class and medium from pgvector. If the call fails or takes more than 5 seconds, the tutor answers without textbook context instead of failing.
-6. **Generation.** Providers are tried in order: OpenRouter, Hugging Face Inference Providers, Groq. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned. If every provider fails, the route answers `503 providers_unavailable`.
+6. **Generation.** Providers are tried in order: Groq, OpenRouter, Hugging Face Inference Providers. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned. If every provider fails, the route answers `503 providers_unavailable`.
 
 Every error body has the shape `{ "error": "...", "code": "..." }`. The codes are `rate_limited` (429), `not_configured` (503), `too_large` (413), `invalid_input` (400), `providers_unavailable` (503) and `internal_error` (500). The chat shows its own Bangla or English message for `rate_limited`, `not_configured` and `providers_unavailable`, and a generic error message for the rest.
 
@@ -94,9 +94,9 @@ Set these in `.env.local` for local work, or in your host's settings. `.env.exam
 
 | Name | Needed for | Notes |
 | --- | --- | --- |
-| `OPENROUTER_API_KEY` | Chat, first provider | Set at least one of the three chat keys |
-| `HF_API_KEY` | Chat, second provider | |
-| `GROQ_API_KEY` | Chat, third provider | |
+| `GROQ_API_KEY` | Chat, first provider | Set at least one of the three chat keys |
+| `OPENROUTER_API_KEY` | Chat, second provider | |
+| `HF_API_KEY` | Chat, third provider | |
 | `OPENROUTER_MODEL` | Optional | Default `google/gemma-4-31b-it:free` |
 | `HF_CHAT_MODEL` | Optional | Default `google/gemma-4-26B-A4B-it` |
 | `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |

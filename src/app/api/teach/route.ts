@@ -10,6 +10,7 @@ import { createRateLimiter } from "@/lib/rate-limit";
 import { retrieveContext } from "@/lib/retrieval";
 import { createStore } from "@/lib/store";
 import {
+  buildSystemPrompt,
   errorSummary,
   getCacheKey,
   getClientIp,
@@ -17,7 +18,6 @@ import {
   parseTeachRequest,
   stripThinkBlocks,
   type ChatTurn,
-  type Language,
 } from "@/lib/teach";
 import { MAX_BODY_CHARS } from "@/lib/teach-limits";
 
@@ -91,45 +91,18 @@ function errorResponse(status: number, code: string, error: string, headers: Hea
 
 export const maxDuration = 45; // Allow time for fallbacks
 
-function buildSystemPrompt(grade: number, language: Language, contextText: string): string {
-    const context = contextText
-        || "(No textbook passages were found for this question. Answer from general knowledge and tell the student the answer is not taken from their textbook.)";
-    return `
-You are **Shikhbo AI**, an advanced academic tutor for Class ${grade} (Medium: ${language}).
-
-### YOUR GOAL
-Do not just give answers. **Teach the student how to think.**
-Use the **Provided Context** as your knowledge base.
-
-### RESPONSE PROTOCOL (Step-by-Step)
-For every question (especially Math/Science), follow this structure:
-
-1.  **🔍 Analyze the Problem:**
-    * Identify what is given.
-    * Identify what needs to be found.
-
-2.  **📖 Reference the Concept:**
-    * Quote the relevant rule/formula from the Textbook Context.
-    * Example: "According to Newton's Second Law (Page 45)..."
-
-3.  **🧠 Step-by-Step Solution:**
-    * Show the logical steps clearly.
-    * Use LaTeX for math (e.g., $F = ma$).
-    * *Do not skip steps.* Explain *why* you are doing each step.
-
-4.  **✅ Final Conclusion:**
-    * State the answer clearly in Bengali (or English if requested).
-
-### TEXTBOOK CONTEXT:
-${context}
-`;
-}
-
 // ---------------------------------------------------------
 // 2. GENERATION (THE FALLBACK CASCADE)
 // ---------------------------------------------------------
 async function generateAnswer(system: string, messages: ChatTurn[]): Promise<string | null> {
     const providers: Array<{ name: string; run: () => Promise<string | null | undefined> }> = [];
+
+    if (groq) {
+        providers.push({
+            name: "groq",
+            run: async () => (await generateText({ model: groq(models.groq), system, messages })).text,
+        });
+    }
 
     if (openrouter) {
         providers.push({
@@ -150,13 +123,6 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
             },
         });
     }
-    if (groq) {
-        providers.push({
-            name: "groq",
-            run: async () => (await generateText({ model: groq(models.groq), system, messages })).text,
-        });
-    }
-
     for (const provider of providers) {
         try {
             const text = stripThinkBlocks((await provider.run()) ?? "");

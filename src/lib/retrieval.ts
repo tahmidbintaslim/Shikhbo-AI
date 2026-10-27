@@ -22,10 +22,15 @@ class RetrievalTimeoutError extends Error {
   }
 }
 
+/** "Class 1 Math_compressed.pdf, page 12" -> "Class 1 Math, page 12" */
+export function sourceLabel(source: string): string {
+  return source.replace(/(_compressed)?( \(\d+\))?\.pdf/i, "").trim();
+}
+
 export function formatContext(matches: Array<Partial<TextbookMatch>>): string {
   return matches
     .filter((m) => typeof m.text === "string" && m.text.trim() !== "")
-    .map((m) => `[Source: ${typeof m.source === "string" && m.source ? m.source : "textbook"}]: ${m.text as string}`)
+    .map((m) => `[Source: ${typeof m.source === "string" && m.source ? sourceLabel(m.source) : "textbook"}]: ${m.text as string}`)
     .join("\n\n");
 }
 

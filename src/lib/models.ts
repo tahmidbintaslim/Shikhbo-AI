@@ -2,11 +2,11 @@
 // checked against each provider's model list on 2026-10-19.
 
 export const DEFAULT_MODELS = {
-  /** OpenRouter, tried first. A free-tier model. */
+  /** OpenRouter, tried second. A free-tier model. */
   openrouter: "google/gemma-4-31b-it:free",
-  /** Hugging Face Inference Providers, tried second. */
+  /** Hugging Face Inference Providers, tried last. */
   huggingface: "google/gemma-4-26B-A4B-it",
-  /** Groq, tried last. */
+  /** Groq, tried first. */
   groq: "openai/gpt-oss-120b",
 } as const;
 
