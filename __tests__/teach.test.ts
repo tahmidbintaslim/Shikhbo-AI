@@ -1,9 +1,8 @@
 import { describe, expect, mock, test } from "bun:test";
 import { getModelConfig, DEFAULT_MODELS } from "../src/lib/models";
-import { createMemoryLimiter, getRedisCredentials } from "../src/lib/rate-limit";
-import { formatContext, retrieveContext, toVector } from "../src/lib/retrieval";
+import { createMemoryLimiter } from "../src/lib/rate-limit";
+import { formatContext, retrieveContext } from "../src/lib/retrieval";
 import {
-    buildVectorFilter,
     errorSummary,
     getCacheKey,
     getClientIp,
@@ -122,12 +121,6 @@ describe("helpers", () => {
         expect(sanitizeInput('<img src=x onerror="alert(1)">What is 2+2?')).toBe("What is 2+2?");
     });
 
-    test("buildVectorFilter only emits known values", () => {
-        expect(buildVectorFilter(1, "bengali")).toBe("language = 'bengali' AND grade = 1");
-        expect(() => buildVectorFilter(0, "english")).toThrow();
-        expect(() => buildVectorFilter(2.5, "english")).toThrow();
-    });
-
     test("getCacheKey separates mediums and does not store the question in clear", () => {
         const en = getCacheKey("What is a noun?", 1, "english");
         const bn = getCacheKey("What is a noun?", 1, "bengali");
@@ -201,58 +194,56 @@ describe("retrieval", () => {
 
     test("returns formatted passages on success", async () => {
         const search = mock(async () => [
-            { metadata: { source: "Class 1 Math.pdf", text: "[Page: 4] Two plus three is five." } },
-            { metadata: { source: "x.pdf" } },
+            { source: "Class 1 Math.pdf, page 4", text: "[Page: 4] Two plus three is five.", similarity: 0.8 },
+            { source: "x.pdf", text: " ", similarity: 0.1 },
         ]);
-        const context = await retrieveContext(query, { embed: async () => [0.1, 0.2], search });
-        expect(context).toBe("[Source: Class 1 Math.pdf]: [Page: 4] Two plus three is five.");
-        expect(search).toHaveBeenCalledWith([0.1, 0.2], "language = 'english' AND grade = 1", 5);
+        const context = await retrieveContext(query, { search });
+        expect(context).toBe("[Source: Class 1 Math.pdf, page 4]: [Page: 4] Two plus three is five.");
+        const [q, grade, language, topK] = search.mock.calls[0] as unknown as [string, number, string, number];
+        expect([q, grade, language, topK]).toEqual(["What is 2 + 3?", 1, "english", 5]);
     });
 
-    test("falls back to no context when the embedding call fails", async () => {
+    test("falls back to no context when the store fails, without logging the question", async () => {
         const warn = mock(() => {});
         const original = console.warn;
         console.warn = warn;
         try {
             const context = await retrieveContext(query, {
-                embed: async () => { throw new Error("401 Unauthorized"); },
-                search: async () => [],
+                search: async () => { throw new Error("store match answered HTTP 500"); },
             });
             expect(context).toBe("");
             expect(warn).toHaveBeenCalledTimes(1);
             const line = String((warn.mock.calls[0] as unknown[])[0]);
-            expect(line).toContain("401 Unauthorized");
+            expect(line).toContain("HTTP 500");
             expect(line).not.toContain(query.query);
         } finally {
             console.warn = original;
         }
     });
 
-    test("falls back to no context when the vector query fails", async () => {
+    test("rejects a grade outside 1-12 without calling the store", async () => {
         const original = console.warn;
         console.warn = () => {};
+        const search = mock(async () => []);
         try {
-            const context = await retrieveContext(query, {
-                embed: async () => [[0.1, 0.2]],
-                search: async () => { throw new Error("index not found"); },
-            });
-            expect(context).toBe("");
+            expect(await retrieveContext({ ...query, grade: 0 }, { search })).toBe("");
+            expect(await retrieveContext({ ...query, grade: 2.5 }, { search })).toBe("");
+            expect(search).not.toHaveBeenCalled();
         } finally {
             console.warn = original;
         }
     });
 
-    test("falls back to no context on timeout and aborts the embedding call", async () => {
+    test("falls back to no context on timeout and aborts the store call", async () => {
         const original = console.warn;
         console.warn = () => {};
         let aborted = false;
         try {
             const context = await retrieveContext(query, {
-                embed: (_text, signal) => new Promise((resolve) => {
+                search: (_q, _g, _l, _k, signal) => new Promise((resolve) => {
                     signal.addEventListener("abort", () => { aborted = true; });
-                    setTimeout(() => resolve([0.1]), 1000);
+                    setTimeout(() => resolve([]), 1000);
                 }),
-                search: async () => [],
             }, 20);
             expect(context).toBe("");
             expect(aborted).toBe(true);
@@ -261,15 +252,8 @@ describe("retrieval", () => {
         }
     });
 
-    test("toVector accepts flat and batched output only", () => {
-        expect(toVector([1, 2])).toEqual([1, 2]);
-        expect(toVector([[1, 2]])).toEqual([1, 2]);
-        expect(() => toVector([])).toThrow();
-        expect(() => toVector("nope")).toThrow();
-    });
-
     test("formatContext skips matches without text", () => {
-        expect(formatContext([{ metadata: { text: " " } }, {}])).toBe("");
+        expect(formatContext([{ text: " " }, {}])).toBe("");
     });
 });
 
@@ -285,18 +269,4 @@ describe("rate limit", () => {
         expect(allow("a")).toBe(true);
     });
 
-    test("Upstash credentials are used only as complete pairs", () => {
-        expect(getRedisCredentials({})).toBeNull();
-        expect(getRedisCredentials({ UPSTASH_REDIS_REST_URL: "https://u" })).toBeNull();
-        expect(getRedisCredentials({ UPSTASH_REDIS_REST_URL: "https://u", KV_REST_API_TOKEN: "t" })).toBeNull();
-        expect(getRedisCredentials({ KV_REST_API_URL: "https://k", KV_REST_API_TOKEN: "t" })).toEqual({ url: "https://k", token: "t" });
-        expect(
-            getRedisCredentials({
-                UPSTASH_REDIS_REST_URL: "https://u",
-                UPSTASH_REDIS_REST_TOKEN: "ut",
-                KV_REST_API_URL: "https://k",
-                KV_REST_API_TOKEN: "kt",
-            }),
-        ).toEqual({ url: "https://u", token: "ut" });
-    });
 });

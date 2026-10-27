@@ -6,7 +6,7 @@ import { createRateLimiter } from "../src/lib/rate-limit";
 describe("service config", () => {
     test("no env vars means no chat provider and no retrieval", () => {
         const config = readServiceConfig({});
-        expect(config).toEqual({ openrouterKey: null, hfKey: null, groqKey: null, vector: null, problems: [] });
+        expect(config).toEqual({ openrouterKey: null, hfKey: null, groqKey: null, store: null, problems: [] });
         expect(configStatus(config)).toEqual({ ok: false, chatProviders: 0, textbookRetrieval: false });
     });
 
@@ -22,58 +22,45 @@ describe("service config", () => {
         expect(configStatus(config)).toEqual({ ok: true, chatProviders: 1, textbookRetrieval: false });
     });
 
-    test("textbook retrieval needs the full vector pair and the Hugging Face key", () => {
-        const vectorOnly = readServiceConfig({
-            UPSTASH_VECTOR_REST_URL: "https://v",
-            UPSTASH_VECTOR_REST_TOKEN: "t",
-        });
-        expect(configStatus(vectorOnly).textbookRetrieval).toBe(false);
-
-        const halfPair = readServiceConfig({ UPSTASH_VECTOR_REST_URL: "https://v", HF_API_KEY: "hf" });
-        expect(halfPair.vector).toBeNull();
+    test("textbook retrieval needs the full store pair", () => {
+        const urlOnly = readServiceConfig({ SHIKHBO_STORE_URL: "https://p.supabase.co/functions/v1/shikhbo-api" });
+        expect(urlOnly.store).toBeNull();
+        expect(configStatus(urlOnly).textbookRetrieval).toBe(false);
 
         const full = readServiceConfig({
-            UPSTASH_VECTOR_REST_URL: "https://v",
-            UPSTASH_VECTOR_REST_TOKEN: "t",
-            HF_API_KEY: "hf",
+            SHIKHBO_STORE_URL: "https://p.supabase.co/functions/v1/shikhbo-api",
+            SHIKHBO_STORE_SECRET: "s",
+            GROQ_API_KEY: "g",
         });
         expect(configStatus(full)).toEqual({ ok: true, chatProviders: 1, textbookRetrieval: true });
     });
 
-    test("a vector URL that is not an https REST URL disables retrieval and names the variable", () => {
-        // The Upstash Vector client accepts these without throwing, and
-        // Node's fetch error then quotes the value on every question.
+    test("a store URL that is not an https URL disables the store and names the variable", () => {
         const bad = [
-            "ABUFakeVectorToken0123456789abcdefXYZ=", // URL and token swapped
-            "redis://default:S3cretPass@eu1-x.upstash.io:6379",
-            "https://default:S3cretPass@eu1-x-vector.upstash.io",
-            "http://eu1-x-vector.upstash.io",
+            "0123456789abcdef0123456789abcdef", // URL and secret swapped
+            "https://user:S3cretPass@p.supabase.co/functions/v1/shikhbo-api",
+            "http://p.supabase.co/functions/v1/shikhbo-api",
             "not a url",
         ];
         for (const url of bad) {
-            const config = readServiceConfig({
-                UPSTASH_VECTOR_REST_URL: url,
-                UPSTASH_VECTOR_REST_TOKEN: "https://eu1-x-vector.upstash.io",
-                HF_API_KEY: "hf",
-            });
-            expect(config.vector).toBeNull();
+            const config = readServiceConfig({ SHIKHBO_STORE_URL: url, SHIKHBO_STORE_SECRET: "https://p.supabase.co" });
+            expect(config.store).toBeNull();
             expect(configStatus(config).textbookRetrieval).toBe(false);
             expect(config.problems).toHaveLength(1);
-            expect(config.problems[0]).toContain("UPSTASH_VECTOR_REST_URL");
+            expect(config.problems[0]).toContain("SHIKHBO_STORE_URL");
             expect(config.problems[0]).not.toContain(url);
             expect(config.problems[0]).not.toContain("S3cretPass");
         }
     });
 
-    test("an https vector URL without credentials is accepted", () => {
-        expect(isRestUrl("https://eu1-x-vector.upstash.io")).toBe(true);
-        expect(isRestUrl("https://eu1-x-vector.upstash.io/")).toBe(true);
+    test("an https store URL without credentials is accepted and trimmed", () => {
+        expect(isRestUrl("https://p.supabase.co/functions/v1/shikhbo-api")).toBe(true);
         expect(isRestUrl("")).toBe(false);
         const config = readServiceConfig({
-            UPSTASH_VECTOR_REST_URL: " https://eu1-x-vector.upstash.io\n",
-            UPSTASH_VECTOR_REST_TOKEN: "t",
+            SHIKHBO_STORE_URL: " https://p.supabase.co/functions/v1/shikhbo-api\n",
+            SHIKHBO_STORE_SECRET: " s ",
         });
-        expect(config.vector).toEqual({ url: "https://eu1-x-vector.upstash.io", token: "t" });
+        expect(config.store).toEqual({ url: "https://p.supabase.co/functions/v1/shikhbo-api", secret: "s" });
         expect(config.problems).toEqual([]);
     });
 
@@ -91,20 +78,26 @@ describe("service config", () => {
 });
 
 describe("rate limiter setup", () => {
-    test("a non-https Redis URL falls back to the in-memory limit instead of throwing", async () => {
-        const log = spyOn(console, "error").mockImplementation(() => {});
-        const limiter = createRateLimiter({
-            KV_REST_API_URL: "rediss://default:token@example.upstash.io:6379",
-            KV_REST_API_TOKEN: "t",
-        });
-        expect(limiter.backend).toBe("memory");
-        expect(await limiter.allow("k")).toBe(true);
-        expect(String(log.mock.calls[0]?.[0])).not.toContain("token@");
-        log.mockRestore();
+    test("no store means the in-memory limit", () => {
+        expect(createRateLimiter(null).backend).toBe("memory");
     });
 
-    test("no Redis credentials means the in-memory limit", () => {
-        expect(createRateLimiter({}).backend).toBe("memory");
+    test("uses the store, and the in-memory limit when a store call fails", async () => {
+        const warn = spyOn(console, "warn").mockImplementation(() => {});
+        let fail = false;
+        const store = {
+            rateLimit: async () => {
+                if (fail) throw new Error("HTTP 500");
+                return false;
+            },
+        } as unknown as Parameters<typeof createRateLimiter>[0];
+        const limiter = createRateLimiter(store);
+        expect(limiter.backend).toBe("store");
+        expect(await limiter.allow("k")).toBe(false);
+        fail = true;
+        expect(await limiter.allow("k")).toBe(true);
+        expect(warn).toHaveBeenCalledTimes(1);
+        warn.mockRestore();
     });
 });
 

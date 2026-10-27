@@ -1,21 +1,23 @@
 -- Shikhbo AI's storage in Supabase Postgres: the textbook vector index, the
 -- answer cache and the rate limiter, in their own schema.
 --
--- The schema is not exposed through the Supabase API. The app reaches it only
--- through the public.shikhbo_* functions below, called with the project's
--- publishable (anon) key:
---   - shikhbo_match_pages is read-only (textbook text is public);
---   - the cache and rate-limit functions also need the server secret
---     (SHIKHBO_DB_SECRET), checked against its SHA-256 in shikhbo.app_secret,
---     so the public anon key alone cannot write answers or touch counters.
+-- The schema is not exposed through the Supabase API (no role has USAGE on
+-- it). The app reaches it only through the shikhbo-api Edge Function
+-- (supabase/functions/shikhbo-api), which connects with SUPABASE_DB_URL and
+-- calls the public.shikhbo_* functions below. The cache, rate-limit and page
+-- functions need the server secret (SHIKHBO_STORE_SECRET), checked against
+-- its SHA-256 in shikhbo.app_secret; the function checks it on every request.
+--
+-- After applying, store the secret's hash once:
+--   insert into shikhbo.app_secret (sha256) values ('<sha256 hex of the secret>')
+--   on conflict (id) do update set sha256 = excluded.sha256;
 
 create extension if not exists vector with schema extensions;
 
 create schema if not exists shikhbo;
-revoke all on schema shikhbo from public, anon, authenticated;
 
 -- One row per OCR'd textbook page, embedded with
--- sentence-transformers/all-MiniLM-L6-v2 (384 dimensions, normalized).
+-- Supabase gte-small (384 dimensions, mean-pooled and normalized).
 create table if not exists shikhbo.textbook_pages (
   id text primary key,
   grade int not null check (grade between 1 and 12),
@@ -41,7 +43,7 @@ create table if not exists shikhbo.rate_limit (
   primary key (key, window_start)
 );
 
--- Exactly one row: the SHA-256 (hex) of SHIKHBO_DB_SECRET.
+-- Exactly one row: the SHA-256 (hex) of SHIKHBO_STORE_SECRET.
 create table if not exists shikhbo.app_secret (
   id boolean primary key default true check (id),
   sha256 text not null
@@ -62,7 +64,6 @@ begin
     raise exception 'not allowed' using errcode = '42501';
   end if;
 end $$;
-revoke all on function shikhbo.check_secret(text) from public, anon, authenticated;
 
 create or replace function public.shikhbo_match_pages(
   query_embedding extensions.vector(384),
@@ -96,7 +97,6 @@ begin
   insert into shikhbo.answer_cache (key, response, expires_at)
   values (p_key, p_response, now() + make_interval(secs => least(greatest(p_ttl_seconds, 1), 86400)))
   on conflict (key) do update set response = excluded.response, expires_at = excluded.expires_at;
-  delete from shikhbo.answer_cache where expires_at < now() - interval '1 hour';
 end $$;
 
 -- Fixed window: true while the key has made at most p_limit calls in the
@@ -113,7 +113,6 @@ begin
   insert into shikhbo.rate_limit (key, window_start, hits) values (p_key, v_window, 1)
   on conflict (key, window_start) do update set hits = shikhbo.rate_limit.hits + 1
   returning hits into v_hits;
-  delete from shikhbo.rate_limit where window_start < now() - interval '1 day';
   return v_hits <= p_limit;
 end $$;
 
@@ -131,11 +130,6 @@ begin
     source = excluded.source, text = excluded.text, embedding = excluded.embedding;
 end $$;
 
-revoke all on function public.shikhbo_match_pages(extensions.vector, int, text, int) from public;
-revoke all on function public.shikhbo_cache_get(text, text) from public;
-revoke all on function public.shikhbo_cache_set(text, text, text, int) from public;
-revoke all on function public.shikhbo_rate_limit_hit(text, text, int, int) from public;
-revoke all on function public.shikhbo_upsert_page(text, text, int, text, text, text, extensions.vector) from public;
 grant execute on function public.shikhbo_match_pages(extensions.vector, int, text, int) to anon, authenticated, service_role;
 grant execute on function public.shikhbo_cache_get(text, text) to anon, authenticated, service_role;
 grant execute on function public.shikhbo_cache_set(text, text, text, int) to anon, authenticated, service_role;

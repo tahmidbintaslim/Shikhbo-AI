@@ -2,14 +2,13 @@
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import { createGroq } from "@ai-sdk/groq";
 import { HfInference } from "@huggingface/inference";
-import { Index } from "@upstash/vector";
 import { generateText } from "ai";
 import { NextResponse } from "next/server";
-import { createClient } from "@vercel/kv";
 import { CHAT_KEY_NAMES, createOptional, readServiceConfig } from "@/lib/config";
 import { getModelConfig } from "@/lib/models";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { retrieveContext } from "@/lib/retrieval";
+import { createStore } from "@/lib/store";
 import {
   errorSummary,
   getCacheKey,
@@ -22,23 +21,14 @@ import {
 } from "@/lib/teach";
 import { MAX_BODY_CHARS } from "@/lib/teach-limits";
 
-const kvUrl = process.env.KV_REST_API_URL?.trim();
-const kvToken = process.env.KV_REST_API_TOKEN?.trim();
-const kv = kvUrl && kvToken
-    ? createOptional("answer cache", "KV_REST_API_URL and KV_REST_API_TOKEN (an https REST URL)", () =>
-        createClient({ url: kvUrl, token: kvToken }))
-    : null;
-
-// Simple response caching (fallback for development)
+// Answer cache: Supabase through the store when configured, else this
+// process's memory (a development fallback; serverless instances don't share it).
 const responseCache = new Map<string, { response: string; timestamp: number }>();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 async function getCachedResponse(key: string): Promise<string | null> {
     try {
-        if (kv) {
-            const cached = await kv.get(`cache:${key}`);
-            if (cached && typeof cached === "string") return cached;
-        }
+        if (store) return await store.cacheGet(key);
         const cached = responseCache.get(key);
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) return cached.response;
         if (cached) responseCache.delete(key); // Expired
@@ -51,8 +41,8 @@ async function getCachedResponse(key: string): Promise<string | null> {
 
 async function setCachedResponse(key: string, response: string): Promise<void> {
     try {
-        if (kv) {
-            await kv.set(`cache:${key}`, response, { ex: CACHE_TTL / 1000 });
+        if (store) {
+            await store.cacheSet(key, response, CACHE_TTL / 1000);
         } else {
             responseCache.set(key, { response, timestamp: Date.now() });
         }
@@ -69,16 +59,12 @@ async function setCachedResponse(key: string, response: string): Promise<void> {
 const config = readServiceConfig();
 for (const problem of config.problems) console.error(`[config] ${problem}`);
 const models = getModelConfig();
-const rateLimiter = createRateLimiter();
 
-// A. Vector DB (textbook passages)
-const vector = config.vector;
-const index = vector
-    ? createOptional("textbook retrieval", "UPSTASH_VECTOR_REST_URL and UPSTASH_VECTOR_REST_TOKEN", () =>
-        new Index({ url: vector.url, token: vector.token }))
-    : null;
+// A. Store (supabase/functions/shikhbo-api): textbook pages, answer cache, shared rate limit
+const store = config.store ? createStore(config.store) : null;
+const rateLimiter = createRateLimiter(store);
 
-// B. Hugging Face: embeddings for retrieval and the second chat provider
+// B. Hugging Face: the second chat provider
 const hfKey = config.hfKey;
 const hf = hfKey ? createOptional("Hugging Face", "HF_API_KEY", () => new HfInference(hfKey)) : null;
 
@@ -228,12 +214,9 @@ export async function POST(req: Request) {
         // ---------------------------------------------------------
         // RETRIEVAL (RAG). Failures and timeouts degrade to no context.
         // ---------------------------------------------------------
-        const contextText = index && hf
+        const contextText = store
             ? await retrieveContext({ query: question, grade, language }, {
-                embed: (text, signal) =>
-                    hf.featureExtraction({ model: models.embedding, inputs: text }, { signal }),
-                search: (vector, filter, topK) =>
-                    index.query({ vector, topK, includeMetadata: true, filter }),
+                search: (query, g, medium, topK, signal) => store.match(query, g, medium, topK, signal),
             })
             : "";
 

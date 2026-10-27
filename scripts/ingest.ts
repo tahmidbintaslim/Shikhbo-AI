@@ -1,11 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
-import { Index } from "@upstash/vector";
-import { HfInference } from "@huggingface/inference";
 import dotenv from 'dotenv';
 import { createWorker } from 'tesseract.js';
-import { getModelConfig } from '../src/lib/models';
+import { readServiceConfig } from '../src/lib/config';
+import { createStore } from '../src/lib/store';
 
 dotenv.config({ path: '.env.local' });
 
@@ -76,13 +75,15 @@ async function extractTextWithOCR(filePath: string, language: 'eng' | 'ben') {
 }
 
 async function ingestBooks() {
-    const index = new Index({
-        url: process.env.UPSTASH_VECTOR_REST_URL!,
-        token: process.env.UPSTASH_VECTOR_REST_TOKEN!,
-    });
-    const hf = new HfInference(process.env.HF_API_KEY);
+    // Pages go to Supabase through the shikhbo-api Edge Function, which
+    // embeds them with gte-small, the same model it embeds questions with.
+    const config = readServiceConfig();
+    if (!config.store) {
+        throw new Error("Set SHIKHBO_STORE_URL and SHIKHBO_STORE_SECRET in .env.local first.");
+    }
+    const store = createStore(config.store);
 
-    const languages = ['bengali', 'english'];
+    const languages = ['bengali', 'english'] as const;
 
     for (const lang of languages) {
         const langDir = path.join(BASE_DIR, lang);
@@ -105,24 +106,12 @@ async function ingestBooks() {
                 console.log(`   - Indexing ${pages.length} pages...`);
 
                 for (const p of pages) {
-                    const contextText = `[Page: ${p.page}] ${p.text}`;
-
-                    const embedding = await hf.featureExtraction({
-                        // Must match the model /api/teach embeds questions with.
-                        model: getModelConfig().embedding,
-                        inputs: contextText,
-                    });
-
-                    await index.upsert({
+                    await store.upsertPage({
                         id: `${lang}-${file}-p${p.page}`,
-                        vector: embedding as number[],
-                        metadata: {
-                            text: contextText,
-                            source: file,
-                            language: lang,
-                            grade: grade,
-                            page: p.page
-                        }
+                        grade,
+                        medium: lang,
+                        source: `${file}, page ${p.page}`,
+                        text: `[Page: ${p.page}] ${p.text}`,
                     });
 
                     if (p.page % 5 === 0) process.stdout.write(`.`);

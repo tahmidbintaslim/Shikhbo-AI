@@ -8,11 +8,6 @@ export const DEFAULT_MODELS = {
   huggingface: "google/gemma-4-26B-A4B-it",
   /** Groq, tried last. */
   groq: "openai/gpt-oss-120b",
-  /**
-   * Embeddings for textbook retrieval. Must match the model (and vector
-   * dimension, 384 here) the Upstash index was ingested with.
-   */
-  embedding: "sentence-transformers/all-MiniLM-L6-v2",
 } as const;
 
 export type ModelConfig = { [K in keyof typeof DEFAULT_MODELS]: string };
@@ -29,6 +24,5 @@ export function getModelConfig(env: Env = process.env): ModelConfig {
     openrouter: pick(env.OPENROUTER_MODEL, DEFAULT_MODELS.openrouter),
     huggingface: pick(env.HF_CHAT_MODEL, DEFAULT_MODELS.huggingface),
     groq: pick(env.GROQ_MODEL, DEFAULT_MODELS.groq),
-    embedding: pick(env.HF_EMBEDDING_MODEL, DEFAULT_MODELS.embedding),
   };
 }

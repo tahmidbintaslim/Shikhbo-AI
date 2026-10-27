@@ -77,22 +77,6 @@ export function parseTeachRequest(body: unknown) {
   return TeachRequestSchema.safeParse(body);
 }
 
-const LANGUAGE_FILTERS: Record<Language, string> = {
-  english: "language = 'english'",
-  bengali: "language = 'bengali'",
-};
-
-/**
- * Upstash Vector only takes filters as strings. Build it from a fixed lookup
- * and a validated integer so no request text ever reaches the filter.
- */
-export function buildVectorFilter(grade: number, language: Language): string {
-  if (!Number.isInteger(grade) || grade < 1 || grade > 12) {
-    throw new RangeError("grade must be an integer from 1 to 12");
-  }
-  return `${LANGUAGE_FILTERS[language]} AND grade = ${grade}`;
-}
-
 /** Cache key over class, medium and the normalized question (hashed). */
 export function getCacheKey(input: string, grade: number | string, language: Language): string {
   const normalized = input.toLowerCase().trim().replace(/\s+/g, " ");
