@@ -8,6 +8,11 @@ describe("buildSystemPrompt", () => {
     expect(buildSystemPrompt(1, "bengali", "")).toContain("Write in Bengali");
   });
 
+  test("Bangla answers use তুমি consistently", () => {
+    expect(buildSystemPrompt(1, "bengali", "")).toContain("তুমি (never আপনি)");
+    expect(buildSystemPrompt(1, "english", "")).not.toContain("তুমি");
+  });
+
   test("keeps young grades short and free of LaTeX", () => {
     const prompt = buildSystemPrompt(1, "english", "");
     expect(prompt).toContain("Do not use LaTeX");
