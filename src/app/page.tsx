@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ChatProvider, useChatContext } from "@/components/ChatProvider";
 import type { Locale } from "@/hooks/useChat";
-import { GRADES, INDEXED_GRADES, type Language } from "@/lib/teach-limits";
+import { GRADES, INDEXED_GRADES } from "@/lib/teach-limits";
 import CONTENT, { SUBJECTS } from "@/data/landing-content";
 import { SimpleFooter } from "@/components/SimpleFooter";
 import { Card, CardBody } from "@heroui/card";
@@ -209,7 +209,6 @@ function Landing() {
     setLocale,
     grade: selectedClass,
     setGrade,
-    language: selectedLanguage,
     setLanguage,
     setInput,
   } = useChatContext();
@@ -232,12 +231,6 @@ function Landing() {
   }));
   const disabledClasses = classOptions.filter((c) => !c.ready).map((c) => c.id);
 
-  // The textbook's medium (NCTB Bangla or English version), not the site language.
-  const mediumLabel = locale === "bn" ? "পাঠ্যবই" : "Textbook";
-  const mediumOptions: { id: Language; label: string }[] = [
-    { id: "bengali", label: locale === "bn" ? "বাংলা ভার্সন" : "Bangla version" },
-    { id: "english", label: locale === "bn" ? "ইংলিশ ভার্সন" : "English version" },
-  ];
 
   const handleSubjectSelect = (subject: (typeof SUBJECTS)[number]) => {
     const prompt =
@@ -301,35 +294,17 @@ function Landing() {
                 ))}
               </Select>
 
-              <Select
-                aria-label={mediumLabel}
-                size="sm"
-                selectedKeys={new Set([selectedLanguage])}
-                onSelectionChange={(keys) => {
-                  const next = Array.from(keys as Set<string>)[0];
-                  if (next === "english" || next === "bengali") setLanguage(next);
-                }}
-                variant="bordered"
-                className="w-full sm:w-40"
-                classNames={{
-                  trigger:
-                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 dark:text-foreground px-3 py-2",
-                  value: "text-foreground",
-                  popoverContent:
-                    "bg-black/95 border border-white/25 text-white shadow-xl",
-                  listbox: "text-sm",
-                }}
-              >
-                {mediumOptions.map((m) => (
-                  <SelectItem key={m.id}>{m.label}</SelectItem>
-                ))}
-              </Select>
 
               <Button
                 size="sm"
                 variant="bordered"
-                aria-label={locale === "bn" ? "Switch the site to English" : "সাইট বাংলায় দেখুন"}
-                onPress={() => setLocale(locale === "bn" ? "en" : "bn")}
+                aria-label={locale === "bn" ? "Switch to English and the English version books" : "বাংলা ও বাংলা ভার্সন বইয়ে যাও"}
+                onPress={() => {
+                  // One switch: the site language is also the textbook medium.
+                  const next = locale === "bn" ? "en" : "bn";
+                  setLocale(next);
+                  setLanguage(next === "bn" ? "bengali" : "english");
+                }}
                 className="rounded-lg border-white/40 dark:border-white/25 text-foreground"
               >
                 {locale === "bn" ? "English" : "বাংলা"}
@@ -381,13 +356,6 @@ function Landing() {
                 <div className="flex flex-wrap gap-3 mt-6">
                   <Button className="glass-btn-primary" radius="full" onPress={focusChat}>
                     {L?.hero?.cta}
-                  </Button>
-                  <Button
-                    className="glass-btn text-foreground"
-                    radius="full"
-                    onPress={() => document.getElementById("subjects")?.scrollIntoView({ behavior: "smooth" })}
-                  >
-                    {locale === "bn" ? "পাঠ্যক্রম" : "Syllabus"}
                   </Button>
                 </div>
                 <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">

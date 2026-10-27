@@ -10,7 +10,7 @@ A homework tutor for students in Bangladesh that explains answers step by step, 
 
 | Dark theme (default) | Light theme |
 | --- | --- |
-| ![Shikhbo AI home page in the dark theme: class, medium and language pickers in the header, a Bangla hero card, subject cards and the chat panel](docs/images/home-dark.png) | ![The same home page in the light theme](docs/images/home-light.png) |
+| ![Shikhbo AI home page in the dark theme: class picker and one language switch (it also picks the textbook) in the header, a Bangla hero card, subject cards and the chat panel](docs/images/home-dark.png) | ![The same home page in the light theme](docs/images/home-light.png) |
 
 Screenshots from a local production build (`npm run build && npm start`), 1280 x 800.
 
