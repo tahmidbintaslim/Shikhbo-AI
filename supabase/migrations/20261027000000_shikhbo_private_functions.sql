@@ -5,6 +5,9 @@
 -- schema regained its default USAGE grant. Only the shikhbo-api Edge
 -- Function (which connects as the database owner through SUPABASE_DB_URL)
 -- calls them now.
+--
+-- Rollout order (no outage): 1. this migration, 2. deploy shikhbo-api,
+-- 3. 20261027000001_drop_public_store_functions.sql.
 
 create or replace function shikhbo.match_pages(
   query_embedding extensions.vector(384),
@@ -70,11 +73,34 @@ begin
     source = excluded.source, text = excluded.text, embedding = excluded.embedding;
 end $$;
 
-drop function if exists public.shikhbo_match_pages(extensions.vector, int, text, int);
-drop function if exists public.shikhbo_cache_get(text, text);
-drop function if exists public.shikhbo_cache_set(text, text, text, int);
-drop function if exists public.shikhbo_rate_limit_hit(text, text, int, int);
-drop function if exists public.shikhbo_upsert_page(text, text, int, text, text, text, extensions.vector);
+-- Only the Edge Function may call these. Explicit per-function revokes: a
+-- schema-level ALTER DEFAULT PRIVILEGES does not remove the PUBLIC grant
+-- new functions get, and the global form would touch Ramadan Planner.
+revoke execute on function shikhbo.check_secret(text) from public, anon, authenticated;
+revoke execute on function shikhbo.match_pages(extensions.vector, int, text, int) from public, anon, authenticated;
+revoke execute on function shikhbo.cache_get(text, text) from public, anon, authenticated;
+revoke execute on function shikhbo.cache_set(text, text, text, int) from public, anon, authenticated;
+revoke execute on function shikhbo.rate_limit_hit(text, text, int, int) from public, anon, authenticated;
+revoke execute on function shikhbo.upsert_page(text, text, int, text, text, text, extensions.vector) from public, anon, authenticated;
 
-revoke all on all functions in schema shikhbo from public, anon, authenticated;
-alter default privileges in schema shikhbo revoke execute on functions from public, anon, authenticated;
+-- Close the API exposure of the old public.* copies now, without dropping
+-- them: the deployed shikhbo-api may still call them, and it connects as
+-- the owner, so it keeps working. 20261027000001 drops them once the new
+-- function is deployed.
+-- Skips copies that are already gone, so a re-run after 20261027000001
+-- does not fail.
+do $$
+declare f text;
+begin
+  foreach f in array array[
+    'public.shikhbo_match_pages(extensions.vector, int, text, int)',
+    'public.shikhbo_cache_get(text, text)',
+    'public.shikhbo_cache_set(text, text, text, int)',
+    'public.shikhbo_rate_limit_hit(text, text, int, int)',
+    'public.shikhbo_upsert_page(text, text, int, text, text, text, extensions.vector)'
+  ] loop
+    if to_regprocedure(f) is not null then
+      execute format('revoke execute on function %s from public, anon, authenticated', f);
+    end if;
+  end loop;
+end $$;
