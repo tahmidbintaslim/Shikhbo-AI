@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { sourceLabel, formatContext } from "../src/lib/retrieval";
-import { buildSystemPrompt } from "../src/lib/teach";
+import { buildSystemPrompt, getCacheKey, PROMPT_VERSION } from "../src/lib/teach";
 
 describe("buildSystemPrompt", () => {
   test("answers in the student's medium", () => {
@@ -26,6 +26,16 @@ describe("buildSystemPrompt", () => {
   test("includes the passages, or says none were found", () => {
     expect(buildSystemPrompt(1, "english", "[Source: Class 1 Math, page 12]: 2 + 3 = 5")).toContain("page 12]: 2 + 3 = 5");
     expect(buildSystemPrompt(1, "english", "  ")).toContain("(none found)");
+  });
+});
+
+describe("greetings and cache", () => {
+  test("a greeting gets a short reply, not a lesson", () => {
+    expect(buildSystemPrompt(1, "english", "")).toContain("Do not teach a lesson, cite a page or give a practice task for a greeting");
+  });
+
+  test("cache keys change with the prompt version", () => {
+    expect(getCacheKey("hi", 1, "english").startsWith(`v${PROMPT_VERSION}:`)).toBe(true);
   });
 });
 

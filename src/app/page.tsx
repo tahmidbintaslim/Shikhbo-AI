@@ -222,9 +222,12 @@ function Landing() {
   const classLabel = locale === "bn" ? "শ্রেণি" : "Class";
   const heroLines = String(L?.hero?.title ?? "").split("\n");
   const soon = locale === "bn" ? "শীঘ্রই" : "coming soon";
+  const num = (n: number | string) =>
+    locale === "bn" ? String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)] ?? d) : String(n);
+  const focusChat = () => document.getElementById(chatInputId)?.focus();
   const classOptions = GRADES.map((g) => ({
     id: `${g}`,
-    label: locale === "bn" ? `শ্রেণি ${g}` : `Class ${g}`,
+    label: locale === "bn" ? `শ্রেণি ${num(g)}` : `Class ${g}`,
     ready: INDEXED_GRADES.includes(g),
   }));
   const disabledClasses = classOptions.filter((c) => !c.ready).map((c) => c.id);
@@ -376,10 +379,14 @@ function Landing() {
                   {L?.hero?.subtitle}
                 </p>
                 <div className="flex flex-wrap gap-3 mt-6">
-                  <Button className="glass-btn-primary" radius="full">
+                  <Button className="glass-btn-primary" radius="full" onPress={focusChat}>
                     {L?.hero?.cta}
                   </Button>
-                  <Button className="glass-btn" radius="full">
+                  <Button
+                    className="glass-btn text-foreground"
+                    radius="full"
+                    onPress={() => document.getElementById("subjects")?.scrollIntoView({ behavior: "smooth" })}
+                  >
                     {locale === "bn" ? "পাঠ্যক্রম" : "Syllabus"}
                   </Button>
                 </div>
@@ -398,7 +405,7 @@ function Landing() {
               </CardBody>
             </Card>
 
-            <div className="mt-8">
+            <div className="mt-8" id="subjects">
               <h3 className="text-lg font-semibold mb-4">
                 {L?.syllabus?.title}
               </h3>
@@ -415,7 +422,7 @@ function Landing() {
                         onPress={() => handleSubjectSelect(s)}
                         aria-label={
                           locale === "bn"
-                            ? `${s.name.bn} - ${s.indexed ? `শ্রেণি ${selectedClass} সহায়তা` : soon}`
+                            ? `${s.name.bn} - ${s.indexed ? `শ্রেণি ${num(selectedClass)} সহায়তা` : soon}`
                             : `${s.name.en} - ${s.indexed ? `Class ${selectedClass} support` : soon}`
                         }
                         className="glass-card-hover p-0 rounded-2xl w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
@@ -433,7 +440,7 @@ function Landing() {
                             {!s.indexed
                               ? soon
                               : locale === "bn"
-                                ? `শ্রেণি ${selectedClass} সহায়তা`
+                                ? `শ্রেণি ${num(selectedClass)} সহায়তা`
                                 : `Class ${selectedClass} support`}
                           </div>
                         </CardBody>

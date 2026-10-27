@@ -30,6 +30,18 @@ test("only classes with indexed textbooks can be picked", async ({ page }) => {
   await expect(page.getByRole("option", { name: "Class 2" })).toBeDisabled();
 });
 
+test("the hero button focuses the question box", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: /শুরু করি/ }).click();
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeFocused();
+});
+
+test("a starter question fills the question box", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "স্বরবর্ণ কয়টি?" }).click();
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toHaveValue("স্বরবর্ণ কয়টি?");
+});
+
 test("security headers are sent", async ({ request }) => {
   const res = await request.get("/");
   expect(res.headers()["x-frame-options"]).toBe("DENY");

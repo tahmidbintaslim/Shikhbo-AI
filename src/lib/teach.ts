@@ -78,10 +78,16 @@ export function parseTeachRequest(body: unknown) {
 }
 
 /** Cache key over class, medium and the normalized question (hashed). */
+/**
+ * Bump when buildSystemPrompt changes in a way that changes answers, so the
+ * cache stops serving answers written under the old instructions.
+ */
+export const PROMPT_VERSION = 3;
+
 export function getCacheKey(input: string, grade: number | string, language: Language): string {
   const normalized = input.toLowerCase().trim().replace(/\s+/g, " ");
   const digest = createHash("sha256").update(normalized).digest("hex");
-  return `${grade}:${language}:${digest}`;
+  return `v${PROMPT_VERSION}:${grade}:${language}:${digest}`;
 }
 
 /** Rate-limit key: the client IP, hashed so raw addresses are not stored. */
@@ -160,12 +166,13 @@ How to answer:
 - ${young
     ? "The student is young. Use short sentences and everyday words. Use small numbers and familiar things (fruit, pencils, family) as examples. Keep the whole answer under about 120 words. Do not use LaTeX or formal notation."
     : "Match the depth of a Class " + grade + " textbook. Use LaTeX for formulas (for example $F = ma$) when it helps."}
+- If the student only greets you or chats (for example "hi", "hello", "সালাম", "কেমন আছো"), reply warmly in one or two short sentences and ask what they want to learn from their Bangla, English or Math book. Do not teach a lesson, cite a page or give a practice task for a greeting.
 - Teach, do not only tell: show the steps the student should follow, then give the answer clearly at the end.
 - For a math question, solve it step by step and check the result.
-- End with one short question or practice task the student can try.
+- For a real question, end with one short practice task the student can try.
 
 Textbook passages:
-- The passages below were found in the student's textbook. Base the answer on them when they are relevant, and mention the page they came from (for example "page 12").
+- The passages below were found in the student's textbook by a search, so some may be unrelated. Use and cite a passage (for example "page 12") only when it really answers the question.
 - Never quote or cite a page that is not in the passages.
 - If there are no passages, or none of them fit the question, answer from general knowledge and say in one short line that this part is not from their textbook.
 
