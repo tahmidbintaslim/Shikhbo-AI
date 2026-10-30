@@ -120,13 +120,20 @@ export function stripThinkBlocks(text: string): string {
 }
 
 /**
- * Remove emoji (and the variation selectors and skin tones that follow
- * them). The prompt forbids emoji, but models still add them to young
- * students' answers. Bangla conjuncts use U+200D and U+200C, so those are
- * left alone, and digits are not pictographs.
+ * Remove emoji: pictographs with their variation selectors, skin tones and
+ * ZWJ-joined parts (family and profession sequences), flags (pairs of
+ * regional indicators), and the combining keycap that turns 3 into a boxed
+ * digit. The prompt forbids emoji, but models still add them to young
+ * students' answers. A ZWJ is only removed when it joins pictographs:
+ * Bangla conjuncts use U+200D and U+200C, and digits are not pictographs.
  */
 export function stripEmoji(text: string): string {
-  return text.replace(/\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*[ \t]?/gu, "").replace(/\uFE0F/g, "");
+  return text
+    .replace(
+      /(?:\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*(?:\u200D\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*)*|[\u{1F1E6}-\u{1F1FF}]+)[ \t]?/gu,
+      "",
+    )
+    .replace(/[\uFE0F\u20E3]/g, "");
 }
 
 /**
