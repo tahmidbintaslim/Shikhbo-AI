@@ -16,6 +16,7 @@ import {
   getClientIp,
   hashKey,
   parseTeachRequest,
+  stripEmoji,
   stripThinkBlocks,
   type ChatTurn,
 } from "@/lib/teach";
@@ -125,7 +126,7 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
     }
     for (const provider of providers) {
         try {
-            const text = stripThinkBlocks((await provider.run()) ?? "");
+            const text = stripEmoji(stripThinkBlocks((await provider.run()) ?? ""));
             if (text) return text;
             console.warn(`[teach] ${provider.name} returned an empty answer`);
         } catch (err) {
