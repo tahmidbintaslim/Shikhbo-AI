@@ -1,0 +1,55 @@
+name: Bug report
+description: Something in Shikhbo AI does not work as the README describes.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please do not paste API keys, `SHIKHBO_STORE_SECRET` or a student's personal details.
+        Security problems go through [SECURITY.md](https://github.com/tahmidbintaslim/Shikhbo-AI/blob/main/SECURITY.md), not a public issue.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Run `npm run dev`
+        2. Pick Class 1 and Bangla
+        3. Ask "..."
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      options:
+        - Local dev server (npm run dev)
+        - Local production build (npm run build && npm start)
+        - My own deployment
+        - Textbook ingestion (scripts/ingest.ts or books:fetch)
+        - CI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: health
+    attributes:
+      label: Output of /api/health
+      description: "`curl http://localhost:3000/api/health` returns counts and booleans only, no secrets."
+      render: json
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error message or logs
+      render: text
+  - type: input
+    id: versions
+    attributes:
+      label: Node.js version, OS and browser
+      placeholder: Node 22.12, Ubuntu 24.04, Chrome 142

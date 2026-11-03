@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Report a security vulnerability
+    url: https://github.com/tahmidbintaslim/Shikhbo-AI/blob/main/SECURITY.md
+    about: Report it privately by email, not in a public issue.

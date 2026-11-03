@@ -1,12 +1,19 @@
+<div align="center">
+
 # Shikhbo AI
 
-A homework tutor for students in Bangladesh that explains answers step by step, using pages from their NCTB textbooks when it can.
+**A homework tutor for students in Bangladesh that explains answers step by step, using pages from their NCTB textbooks when it can.**
 
 [![CI](https://github.com/tahmidbintaslim/Shikhbo-AI/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tahmidbintaslim/Shikhbo-AI/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/tahmidbintaslim/Shikhbo-AI/actions/workflows/codeql.yml/badge.svg?branch=main)](https://github.com/tahmidbintaslim/Shikhbo-AI/actions/workflows/codeql.yml)
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg)](LICENSE)
-![Status: prototype](https://img.shields.io/badge/status-prototype-orange.svg)
+[![Last commit](https://img.shields.io/github/last-commit/tahmidbintaslim/Shikhbo-AI/main)](https://github.com/tahmidbintaslim/Shikhbo-AI/commits/main)
+[![Status: prototype](https://img.shields.io/badge/status-prototype-orange.svg)](#status-and-roadmap)
+[![GitHub stars](https://img.shields.io/github/stars/tahmidbintaslim/Shikhbo-AI?style=flat)](https://github.com/tahmidbintaslim/Shikhbo-AI/stargazers)
 
-**Status: prototype, no working live demo.** Textbook lookup covers four NCTB Class 1 books. The old Vercel deployment is not linked here because its API fails; [Status](#status) explains why and what is left to fix it.
+</div>
+
+**Status: prototype, no working live demo.** Textbook lookup covers four NCTB Class 1 books. The old Vercel deployment is not linked here because its API fails; [Status and roadmap](#status-and-roadmap) explains why and what is left to fix it.
 
 | Dark theme (default) | Light theme |
 | --- | --- |
@@ -14,11 +21,44 @@ A homework tutor for students in Bangladesh that explains answers step by step, 
 
 Screenshots from a local production build (`npm run build && npm start`), 1280 x 800.
 
+## Quick start
+
+Needs Node.js 22 and npm.
+
+```bash
+git clone https://github.com/tahmidbintaslim/Shikhbo-AI.git
+cd Shikhbo-AI
+npm ci
+cp .env.example .env.local   # add at least one chat provider key
+npm run dev                  # http://localhost:3000
+```
+
+Without a provider key the page still loads and the tutor reports that it is not set up. [Getting started](#getting-started) covers the checks, and [Environment variables](#environment-variables) lists every setting.
+
+## Contents
+
+- [Quick start](#quick-start)
+- [Features](#features)
+- [How it works](#how-it-works)
+- [Tech stack](#tech-stack)
+- [Getting started](#getting-started)
+- [Environment variables](#environment-variables)
+- [Textbook ingestion](#textbook-ingestion)
+- [Scripts](#scripts)
+- [Deployment](#deployment)
+- [Project layout](#project-layout)
+- [Status and roadmap](#status-and-roadmap)
+- [Limitations](#limitations)
+- [Privacy](#privacy)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
+
 ## Features
 
 - Ask a question in a chat box. Pick the class (1 to 12) and the medium (Bangla or English). The page, chat box included, switches between Bangla (the default) and English.
 - Textbook lookup (RAG): the question is matched against OCR'd pages of NCTB textbooks stored in Supabase Postgres with pgvector, filtered by class and medium, and the best pages go to the model as context.
-- Three chat providers tried in order (OpenRouter, Hugging Face Inference Providers, Groq), so one provider being down or out of free quota does not stop answers.
+- Three chat providers tried in order (Groq, OpenRouter, Hugging Face Inference Providers), so one provider being down or out of free quota does not stop answers.
 - Answers render as Markdown (headings, numbered and bulleted lists, code) with KaTeX math. The conversation stays in the browser and can be exported as a text file.
 - Per-IP rate limit and a 5-minute answer cache, both in Supabase (in memory for local work without it).
 - Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a store URL that is not a plain `https://` URL turns the store off (and `/api/health` reports it) and logs which variable to fix.
@@ -35,9 +75,9 @@ flowchart LR
   C -->|miss| E[shikhbo-api Edge Function<br/>embeds with gte-small]
   E --> Q[(Supabase pgvector<br/>NCTB pages)]
   Q --> P[Prompt with<br/>textbook context]
-  P --> O[OpenRouter]
+  P --> G[Groq]
+  G -.fails.-> O[OpenRouter]
   O -.fails.-> H[Hugging Face]
-  H -.fails.-> G[Groq]
 ```
 
 The app is a single Next.js 16 page plus `POST /api/teach` and `GET /api/health`.
@@ -84,7 +124,7 @@ npx playwright install chromium  # once per machine
 npm run test:e2e                 # smoke tests against the production build
 ```
 
-`npm run test:e2e` starts `next start` on port 3100 itself. It passes with or without provider keys: the tests read `/api/health` and check the behaviour that matches.
+`npm run test:e2e` starts `next start` on port 3100 itself. It passes with or without provider keys: the tests read `/api/health` and check the behavior that matches.
 
 `next-env.d.ts` is generated by `next dev`, `next build` and `npm run typecheck` (through `next typegen`), so it is gitignored, as the Next.js docs advise. `AGENTS.md` is the instruction block `next dev` writes for AI coding agents; it is committed so running the dev server leaves the working tree clean.
 
@@ -141,7 +181,7 @@ The script OCRs every page with Tesseract (`ben` for `books/bengali/`, `eng` for
 | `npm run test:e2e` | Playwright smoke tests in `e2e/` (run `npm run build` first) |
 | `npm run books:fetch` | Download the NCTB textbooks listed in `books/sources.json` (add `-- --ocr` to also fetch the Tesseract data) |
 
-CI (`.github/workflows/ci.yml`) runs install, lint, typecheck, unit tests, build and the Playwright smoke tests on pushes and pull requests to `main`. Dependabot (`.github/dependabot.yml`) opens grouped npm and GitHub Actions updates weekly.
+CI (`.github/workflows/ci.yml`) runs install, lint, typecheck, unit tests, build and the Playwright smoke tests on pushes and pull requests to `main`. CodeQL (`.github/workflows/codeql.yml`) scans the JavaScript and TypeScript code on the same events and once a week. Dependabot (`.github/dependabot.yml`) opens grouped npm and GitHub Actions updates weekly.
 
 ## Deployment
 
@@ -178,11 +218,14 @@ books/sources.json             Textbook sources and checksums
 __tests__/                     Unit tests (bun)
 e2e/                           Smoke tests (Playwright)
 docs/images/                   README screenshots
+.github/                       CI and CodeQL workflows, Dependabot, issue forms, pull request template
 ```
 
-## Status
+## Status and roadmap
 
 This is a prototype, not a product in use.
+
+**Working on `main`:** the chat page in Bangla and English, `POST /api/teach` with the three-provider fallback, textbook lookup for the four indexed Class 1 books, the shared rate limit and answer cache in Supabase (with in-memory fallbacks), `GET /api/health`, and CI with unit and smoke tests.
 
 **Live demo.** The Vercel project still serves a build from 2026-01-30. In that build, a failure in the retrieval step (question embedding or vector query) is not caught, so `POST /api/teach` answers HTTP 500 to every question (checked 2026-10-25). Current `main` answers without textbook context when retrieval fails, and reports missing or malformed settings with a `503` and a clear message instead of a 500. That code has not reached production: every Vercel deployment since 2026-07-23 has failed about one second after it started, before the build step. The same commits pass CI and build with `vercel build` locally, so the cause is in the Vercel project or account settings and is visible only in its deployment logs. Once a deployment succeeds and `/api/health` reports `"ok": true`, the demo link goes back at the top of this file.
 
@@ -218,7 +261,11 @@ Tell students not to type personal details into the chat.
 
 ## Contributing
 
-Issues and pull requests are welcome at https://github.com/tahmidbintaslim/Shikhbo-AI. Before opening a pull request, run the checks under [Getting started](#getting-started); CI runs the same ones. Keep secrets out of commits: `.env.local` is ignored, and `.env.example` holds names only.
+Issues and pull requests are welcome at https://github.com/tahmidbintaslim/Shikhbo-AI. [CONTRIBUTING.md](CONTRIBUTING.md) explains the setup, the checks to run before a pull request (CI runs the same ones) and what a good change looks like. Bug reports and feature requests use the issue forms. Keep secrets out of commits: `.env.local` is ignored, and `.env.example` holds names only.
+
+## Security
+
+Please report vulnerabilities privately, not in a public issue. [SECURITY.md](SECURITY.md) explains how.
 
 ## License
 
