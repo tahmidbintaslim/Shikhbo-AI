@@ -62,7 +62,7 @@
     "@heroui/tooltip": "^2.2.26",
     "@heroui/user": "^2.2.24",
     "@huggingface/inference": "^4.13.10",
-    "@openrouter/ai-sdk-provider": "^2.1.1",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "@react-aria/ssr": "^3.9.10",
     "@react-aria/visually-hidden": "^3.8.29",
     "ai": "^6.0.57",
