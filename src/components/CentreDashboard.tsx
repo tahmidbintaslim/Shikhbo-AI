@@ -136,22 +136,20 @@ export default function CentreDashboard({ slug, name }: { slug: string; name: st
 
       <section className="mt-8" aria-labelledby="week-title">
         <h2 id="week-title">গত {bn(stats.days)} দিন</h2>
-        <table className="khata-table">
-          <thead>
-            <tr>
-              <th scope="col">সক্রিয় শিক্ষার্থী</th>
-              <th scope="col">মোট প্রশ্ন</th>
-              <th scope="col">নোটে উত্তর নেই</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr className="text-2xl font-semibold leading-16 text-ink-deep">
-              <td>{bn(stats.students)}</td>
-              <td>{bn(stats.questions)}</td>
-              <td className={stats.notCovered > 0 ? "text-red-ink" : undefined}>{bn(stats.notCovered)}</td>
-            </tr>
-          </tbody>
-        </table>
+        <dl>
+          {(
+            [
+              ["সক্রিয় শিক্ষার্থী", stats.students, false],
+              ["মোট প্রশ্ন", stats.questions, false],
+              ["নোটে উত্তর নেই", stats.notCovered, stats.notCovered > 0],
+            ] as const
+          ).map(([label, value, marked]) => (
+            <div key={label} className="khata-leader">
+              <dt>{label}</dt>
+              <dd className={`text-xl font-bold ${marked ? "text-red-ink" : "text-ink-deep"}`}>{bn(value)}</dd>
+            </div>
+          ))}
+        </dl>
       </section>
 
       <section className="mt-16" aria-labelledby="top-title">
@@ -201,7 +199,7 @@ export default function CentreDashboard({ slug, name }: { slug: string; name: st
                 </span>
                 <button
                   type="button"
-                  className="khata-link text-red-ink hover:text-red-ink"
+                  className="khata-link"
                   disabled={busy}
                   aria-label={`${n.title} মুছুন`}
                   onClick={() => {
@@ -248,20 +246,22 @@ export default function CentreDashboard({ slug, name }: { slug: string; name: st
             maxLength={MAX_NOTE_CHARS}
             required
           />
-          <label className="khata-small block">
-            অথবা একটি .txt ফাইল বেছে নিন:{" "}
-            <input
-              type="file"
-              accept=".txt,.md,text/plain"
-              className="text-ink"
-              onChange={async (e) => {
-                const file = e.target.files?.[0];
-                if (!file) return;
-                setText((await file.text()).slice(0, MAX_NOTE_CHARS));
-                if (!title) setTitle(file.name.replace(/\.[^.]+$/, "").slice(0, 120));
-              }}
-            />
-          </label>
+          <p className="khata-small">
+            অথবা{" "}
+            <label className="khata-btn khata-file">
+              একটি .txt ফাইল বেছে নিন
+              <input
+                type="file"
+                accept=".txt,.md,text/plain"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  setText((await file.text()).slice(0, MAX_NOTE_CHARS));
+                  if (!title) setTitle(file.name.replace(/\.[^.]+$/, "").slice(0, 120));
+                }}
+              />
+            </label>
+          </p>
           <button type="submit" className="khata-btn khata-btn-fill khata-btn-tall mt-8" disabled={busy}>
             {busy ? "সেভ হচ্ছে..." : "সেভ করুন"}
           </button>

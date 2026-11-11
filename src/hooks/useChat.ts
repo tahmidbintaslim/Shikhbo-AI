@@ -120,6 +120,7 @@ export function useChat(locale: Locale, centre?: CentreChat) {
                 content: (res.ok && typeof data.result === "string" && data.result) || fallback,
                 role: "assistant",
                 timestamp: new Date(),
+                ...(res.ok && typeof data.source === "string" ? { source: data.source } : {}),
             };
             setMessages((prev) => [...prev, assistantMessage]);
         } catch (err) {

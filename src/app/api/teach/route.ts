@@ -185,14 +185,18 @@ async function centreAnswer(body: unknown, student: string) {
     }
     const { text, covered } = splitCoverage(answer);
 
+    // The nearest note, when the notes covered the question: logged for the
+    // owner and shown to the student beside the answer.
+    const source = covered ? (found.matches[0]?.source ?? null) : null;
+
     // shortcut: a greeting counts as a covered question about the nearest
     // note; add a second marker for small talk if it clutters the dashboard.
     try {
-        await store.centreLog(centre.slug, centre.code, student, question, covered ? (found.matches[0]?.source ?? null) : null);
+        await store.centreLog(centre.slug, centre.code, student, question, source);
     } catch (err) {
         console.warn(`[teach] centre question not logged: ${errorSummary(err)}`);
     }
-    return NextResponse.json({ result: text || NOT_IN_NOTES_REPLY[language] });
+    return NextResponse.json({ result: text || NOT_IN_NOTES_REPLY[language], ...(source ? { source } : {}) });
 }
 
 export async function POST(req: Request) {

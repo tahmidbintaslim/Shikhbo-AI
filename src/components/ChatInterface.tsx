@@ -56,7 +56,7 @@ const STARTERS = {
 /** The teacher's tick, drawn after a new answer is written. */
 function Tick() {
   return (
-    <svg className="khata-tick ml-auto block text-red-ink" width="28" height="22" viewBox="0 0 28 22" fill="none" aria-hidden="true">
+    <svg className="khata-tick" viewBox="0 0 28 22" fill="none" aria-hidden="true">
       <path d="M3 12.5 10 19 25 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
@@ -137,8 +137,8 @@ export default function ChatInterface() {
                     <span className="whitespace-pre-wrap">{m.content}</span>
                   </li>
                 ) : (
-                  <li key={m.id}>
-                    <span className="font-bold text-red-ink">{t.answer}:</span>
+                  <li key={m.id} className="relative">
+                    <span className="sr-only">{t.answer}:</span>
                     <div className={`khata-prose ${seen.has(m.id) ? "" : "khata-write"}`}>
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
@@ -147,13 +147,13 @@ export default function ChatInterface() {
                         {m.content}
                       </ReactMarkdown>
                     </div>
+                    {m.source && <p className="khata-source">{m.source}</p>}
                     <Tick />
                   </li>
                 ),
               )}
               {loading && (
                 <li className="text-pencil">
-                  <span className="font-bold text-red-ink">{t.answer}: </span>
                   <span className="khata-writing">{t.writing}</span>
                 </li>
               )}

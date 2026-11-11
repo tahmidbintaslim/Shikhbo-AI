@@ -64,7 +64,7 @@ function Landing() {
               trigger: "h-8 min-h-8 border-b-[1.5px] border-ink px-0 shadow-none after:hidden",
               value: "text-base font-semibold !text-ink",
               selectorIcon: "text-ink",
-              popoverContent: "rounded-xs border-[1.5px] border-ink bg-paper p-0 shadow-[0_6px_18px_-6px_rgb(19_39_105/0.35)]",
+              popoverContent: "rounded-xs border-[1.5px] border-ink bg-paper p-0",
               listbox: "p-1",
             }}
           >
