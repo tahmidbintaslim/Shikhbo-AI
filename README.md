@@ -6,7 +6,9 @@ A homework tutor for students in Bangladesh that explains answers step by step, 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg)](LICENSE)
 ![Status: prototype](https://img.shields.io/badge/status-prototype-orange.svg)
 
-**Status: prototype, no working live demo.** Textbook lookup covers four NCTB Class 1 books. The old Vercel deployment is not linked here because its API fails; [Status](#status) explains why and what is left to fix it.
+**Status: prototype.** Textbook lookup covers four NCTB Class 1 books. A new deployment builds at https://shikhbo-ai.vercel.app, but it has no chat provider key yet, so it cannot answer; see [Status](#status).
+
+**Direction.** Shikhbo AI is narrowing to homework help for Classes 1 to 5, paid for by parents: a photo of tonight's homework, a hint before the answer, and a weekly view of what the child found hard. None of that is built yet. This repository also holds the engine and the first pilot of Bongo AI, a tutor for coaching centres; see [Coaching-centre pilot](#coaching-centre-pilot-bongo-ai).
 
 | Dark theme (default) | Light theme |
 | --- | --- |
@@ -23,6 +25,18 @@ Screenshots from a local production build (`npm run build && npm start`), 1280 x
 - Per-IP rate limit and a 5-minute answer cache, both in Supabase (in memory for local work without it).
 - Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a store URL that is not a plain `https://` URL turns the store off (and `/api/health` reports it) and logs which variable to fix.
 - `GET /api/health` reports whether the deployment has a chat provider and textbook lookup (counts and booleans only).
+
+## Coaching-centre pilot (Bongo AI)
+
+A coaching centre gets its own tutor on the same engine. It answers only from that centre's notes, and the owner sees what students asked.
+
+- **Students** open `/c/<centre>`, enter the centre's join code once, and ask in Bangla or English. If the notes do not answer a question, the tutor says so and tells the student to ask their teacher; it does not answer from general knowledge.
+- **The owner** opens `/c/<centre>/dashboard` with the owner code. It shows the last 7 days: students who asked, questions, the notes asked about most, and the questions the notes did not answer. The owner adds notes there by pasting text or choosing a `.txt` file, under a title; saving the same title again replaces it. One title holds up to 48,000 characters.
+- **You** create a centre with `bun scripts/centre.ts <slug> "<Centre name>"`, which prints the join code and the owner code once. Only their hashes are stored.
+
+It needs the store (`SHIKHBO_STORE_URL` and `SHIKHBO_STORE_SECRET`) with the `20261111000000_centres.sql` migration applied and the current `shikhbo-api` function deployed, plus a chat provider key. Without the store, centre pages answer 404.
+
+What it does not do yet: PDF or photo upload (notes are text only), accounts (the two codes are the only access control), billing, or a per-centre usage cap. Each student is counted by a random id kept in their browser, so one student on two devices counts twice. The embedding model is English-only, so Bangla notes are matched poorly until it is replaced (see [Limitations](#limitations)).
 
 ## How it works
 
@@ -156,13 +170,18 @@ src/
   app/page.tsx                 Landing page and chat layout
   app/api/teach/route.ts       The tutor API
   app/api/health/route.ts      Configuration status
+  app/api/centre/route.ts      Owner dashboard API: stats and notes
+  app/c/[slug]/                A coaching centre's tutor and its owner dashboard
   components/ChatProvider.tsx  One chat state shared by the header pickers, subject cards and chat box
   components/ChatInterface.tsx Chat box
+  components/CentreChat.tsx    Join-code form and chat for a centre
+  components/CentreDashboard.tsx  Owner's view: questions, gaps, notes
   hooks/useChat.ts             Chat state and the request to /api/teach
   lib/config.ts                Which services the env vars enable; safe client setup
   lib/chat-errors.ts           Error code to chat message
   lib/teach.ts                 Request schema, sanitizing, cache key, helpers
   lib/teach-limits.ts          Length and history limits shared by client and server
+  lib/centre.ts                Centre request schemas, prompt, note chunking
   lib/store.ts                 Client for the shikhbo-api Edge Function
   lib/retrieval.ts             Textbook search with timeout and fallback
   lib/rate-limit.ts            Shared rate limit with in-memory fallback
@@ -170,8 +189,9 @@ src/
   data/landing-content.ts      Landing page copy (Bangla and English)
 scripts/
   ingest.ts                    OCR the textbooks and load them into the store
+  centre.ts                    Create a coaching centre and print its codes
 supabase/
-  migrations/                  The shikhbo schema: pages, cache, rate limit
+  migrations/                  The shikhbo schema: pages, cache, rate limit, centres
   functions/shikhbo-api/       Edge Function: embeddings, search, cache, rate limit
   fetch-books.mjs              Download the textbooks listed in books/sources.json
 books/sources.json             Textbook sources and checksums
@@ -184,14 +204,16 @@ docs/images/                   README screenshots
 
 This is a prototype, not a product in use.
 
-**Live demo.** The Vercel project still serves a build from 2026-01-30. In that build, a failure in the retrieval step (question embedding or vector query) is not caught, so `POST /api/teach` answers HTTP 500 to every question (checked 2026-10-25). Current `main` answers without textbook context when retrieval fails, and reports missing or malformed settings with a `503` and a clear message instead of a 500. That code has not reached production: every Vercel deployment since 2026-07-23 has failed about one second after it started, before the build step. The same commits pass CI and build with `vercel build` locally, so the cause is in the Vercel project or account settings and is visible only in its deployment logs. Once a deployment succeeds and `/api/health` reports `"ok": true`, the demo link goes back at the top of this file.
+**Live demo.** https://shikhbo-ai.vercel.app is a new Vercel project created on 2026-11-11 (the earlier project is gone). It builds from `main`, and `/api/health` answers `503` with `"ok": false` because no chat provider key or store secret is set there yet. Once both are set and `/api/health` reports `"ok": true`, the demo link goes back at the top of this file.
 
 **Roadmap**, in order:
 
-1. Get a working deployment (see above) with at least one chat provider key.
-2. Index more textbooks than the four Class 1 books, starting with the classes the picker offers.
-3. Use a multilingual embedding model and chunk pages, so Bangla questions find the right page.
-4. Stream answers, and add content moderation before students use it.
+1. Add a chat provider key and the store secret to the deployment.
+2. Run the coaching-centre pilot with real centres, and add PDF and photo upload for their notes.
+3. Use a multilingual embedding model and chunk pages, so Bangla questions find the right page or note.
+4. Index the Class 1 to 5 textbooks, once NCTB's terms for reusing them are confirmed.
+5. Photo questions, hints before answers and the parent's weekly view.
+6. Stream answers, and add content moderation before students use it.
 
 ## Limitations
 
@@ -199,7 +221,7 @@ This is a prototype, not a product in use.
 - Bangla retrieval is weak. The embedding model is English-only, and each OCR'd page is embedded as one chunk, so long pages are truncated.
 - The cache key covers only the latest question. A short follow-up such as "explain more" can get an answer cached from another conversation within 5 minutes.
 - Answers arrive in one piece (no streaming), and nothing checks them. The model can be wrong, and there is no content moderation.
-- There is no sign-in. The rate limit is the only protection against someone using up your provider credits.
+- There is no sign-in. The rate limit is the only protection against someone using up your provider credits. A centre student with the join code is limited per browser, not per address, so clearing the browser's storage resets their limit.
 - Free-tier models change and get retired. Model IDs are read from environment variables so you can switch without a code change.
 - The "Start learning" and "Syllabus" buttons do nothing yet.
 
@@ -212,6 +234,7 @@ This app is aimed at children, so be clear about where a question goes:
 - **Rate limit.** A hash of the client IP is the rate-limit key. Supabase keeps each counter for about two minutes. The in-memory fallback keeps it until the server restarts, or until more than 10,000 keys are stored and expired ones are cleared.
 - **Logs.** The server does not log questions or answers. Failures log one short line with the provider, the error type and the error message, with URLs and long token-like strings replaced by `<url>` and `<redacted>`. Configuration problems log the variable name, never its value. Your host may keep its own request logs.
 - **Browser.** The conversation stays in `localStorage` until the student clears it.
+- **Coaching centres.** Unlike the open tutor, a centre's tutor stores each question: its text, the time, the note it was answered from, and a hash of a random id kept in the student's browser. There is no name, address or account. The centre's owner can read the questions the notes did not answer. Questions are deleted after 180 days. A centre's notes are stored until its owner removes them.
 - There are no analytics or tracking scripts in the app.
 
 Tell students not to type personal details into the chat.

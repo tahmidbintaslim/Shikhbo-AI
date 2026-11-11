@@ -7,6 +7,18 @@ import { MAX_ASSISTANT_CHARS, recentTurns, type Language } from "@/lib/teach-lim
 
 export type Locale = "en" | "bn";
 
+/** A coaching centre's tutor (/c/[slug]): answers come from that centre's notes. */
+export interface CentreChat {
+    slug: string;
+    name: string;
+    /** The join code the student typed. */
+    code: string;
+    /** A random id kept in this browser, so the owner can count students without names. */
+    student: string;
+    /** The server refused the join code. */
+    onWrongCode: () => void;
+}
+
 const translations = {
     en: {
         fetchError: "Error connecting to the teacher bot.",
@@ -14,6 +26,7 @@ const translations = {
         rateLimited: "Too many questions in a short time. Please wait a minute and try again.",
         notConfigured: "The tutor is not set up on this site yet, so it cannot answer questions right now.",
         providersUnavailable: "The AI service did not answer. Please try again in a minute.",
+        wrongCode: "That join code did not work. Please enter it again.",
     },
     bn: {
         fetchError: "শিক্ষক বট সংযোগ করতে ত্রুটি হয়েছে।",
@@ -21,13 +34,16 @@ const translations = {
         rateLimited: "অল্প সময়ে অনেক প্রশ্ন করা হয়েছে। এক মিনিট পরে আবার চেষ্টা করো।",
         notConfigured: "এই সাইটে টিউটর এখনো চালু করা হয়নি, তাই এখন প্রশ্নের উত্তর দিতে পারছে না।",
         providersUnavailable: "এআই সেবা থেকে উত্তর আসেনি। এক মিনিট পরে আবার চেষ্টা করো।",
+        wrongCode: "জয়েন কোডটি কাজ করেনি। আবার লেখো।",
     },
 };
 
-export function useChat(locale: Locale) {
+export function useChat(locale: Locale, centre?: CentreChat) {
+    // Each centre keeps its own conversation, apart from the open tutor's.
+    const storageKey = centre ? `centre:${centre.slug}:messages` : 'shikbo-ai-messages';
     const [messages, setMessages] = useState<Message[]>(() => {
         if (typeof window !== 'undefined') {
-            const saved = localStorage.getItem('shikbo-ai-messages');
+            const saved = localStorage.getItem(storageKey);
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
@@ -51,9 +67,9 @@ export function useChat(locale: Locale) {
 
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            localStorage.setItem('shikbo-ai-messages', JSON.stringify(messages));
+            localStorage.setItem(storageKey, JSON.stringify(messages));
         }
-    }, [messages]);
+    }, [messages, storageKey]);
     useEffect(() => {
         if (scrollRef.current) {
             scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
@@ -83,11 +99,22 @@ export function useChat(locale: Locale) {
             }));
             const res = await fetch("/api/teach", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ messages: history, grade, language }),
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(centre ? { "x-centre-student": centre.student } : {}),
+                },
+                body: JSON.stringify(
+                    centre
+                        ? { messages: history, language, centre: { slug: centre.slug, code: centre.code } }
+                        : { messages: history, grade, language },
+                ),
             });
             const data = await res.json().catch(() => ({}));
-            const fallback = errorText(translations[locale], res.status, data.code);
+            const wrongCode = res.status === 401 && data.code === "wrong_code";
+            if (wrongCode) centre?.onWrongCode();
+            const fallback = wrongCode
+                ? translations[locale].wrongCode
+                : errorText(translations[locale], res.status, data.code);
             const assistantMessage: Message = {
                 id: generateId(),
                 content: (res.ok && typeof data.result === "string" && data.result) || fallback,
@@ -111,13 +138,13 @@ export function useChat(locale: Locale) {
     const clearMessages = () => {
         setMessages([]);
         if (typeof window !== 'undefined') {
-            localStorage.removeItem('shikbo-ai-messages');
+            localStorage.removeItem(storageKey);
         }
     };
 
     const exportConversation = () => {
         const conversationText = messages.map(msg =>
-            `${msg.role === 'user' ? 'You' : 'Shikhbo AI'}: ${msg.content}\n`
+            `${msg.role === 'user' ? 'You' : (centre?.name ?? 'Shikhbo AI')}: ${msg.content}\n`
         ).join('\n');
 
         const blob = new Blob([conversationText], { type: 'text/plain' });

@@ -1,10 +1,12 @@
 "use client";
 import { createContext, useContext, useState, type ReactNode } from "react";
-import { useChat, type Locale } from "@/hooks/useChat";
+import { useChat, type CentreChat, type Locale } from "@/hooks/useChat";
 
 type ChatContextValue = ReturnType<typeof useChat> & {
   locale: Locale;
   setLocale: (locale: Locale) => void;
+  /** Set on a coaching centre's page; the chat box then speaks for that centre. */
+  centreName: string | undefined;
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -17,14 +19,16 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export function ChatProvider({
   children,
   initialLocale = "bn",
+  centre,
 }: {
   children: ReactNode;
   initialLocale?: Locale;
+  centre?: CentreChat;
 }) {
   const [locale, setLocale] = useState<Locale>(initialLocale);
-  const chat = useChat(locale);
+  const chat = useChat(locale, centre);
   return (
-    <ChatContext.Provider value={{ ...chat, locale, setLocale }}>
+    <ChatContext.Provider value={{ ...chat, locale, setLocale, centreName: centre?.name }}>
       {children}
     </ChatContext.Provider>
   );
