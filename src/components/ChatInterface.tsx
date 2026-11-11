@@ -24,6 +24,7 @@ const LABELS = {
     export: "Save",
     exportLabel: "Export conversation",
     empty: "Ask anything from your Class 1 books, or try one of these:",
+    emptyCentre: (name: string) => `Ask anything from ${name}'s notes.`,
     inputLabel: "Chat input",
     placeholder: "Ask a question...",
     send: "Send",
@@ -36,6 +37,7 @@ const LABELS = {
     export: "সেভ করো",
     exportLabel: "কথোপকথন এক্সপোর্ট করো",
     empty: "প্রথম শ্রেণির বই থেকে যেকোনো প্রশ্ন করো, অথবা এগুলো চেষ্টা করো:",
+    emptyCentre: (name: string) => `${name}-এর নোট থেকে যেকোনো প্রশ্ন করো।`,
     inputLabel: "প্রশ্ন লেখার ঘর",
     placeholder: "একটি প্রশ্ন লেখো...",
     send: "পাঠাও",
@@ -55,6 +57,7 @@ export default function ChatInterface() {
   const {
     locale,
     language,
+    centreName,
     messages,
     input,
     setInput,
@@ -106,9 +109,10 @@ export default function ChatInterface() {
       >
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <p className="text-sm text-foreground/70 max-w-xs">{t.empty}</p>
+            <p className="text-sm text-foreground/70 max-w-xs">{centreName ? t.emptyCentre(centreName) : t.empty}</p>
             <div className="flex flex-wrap justify-center gap-2">
-              {STARTERS[language].map((q) => (
+              {/* The starters are about the Class 1 textbooks, not a centre's notes. */}
+              {(centreName ? [] : STARTERS[language]).map((q) => (
                 <Button
                   key={q}
                   size="sm"

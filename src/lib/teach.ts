@@ -42,7 +42,7 @@ const AssistantMessageSchema = z.object({
 
 // Only "user" and "assistant" turns are accepted: a client-supplied "system"
 // turn would let anyone rewrite the tutor's instructions.
-const MessageSchema = z.discriminatedUnion("role", [
+export const MessageSchema = z.discriminatedUnion("role", [
   UserMessageSchema,
   AssistantMessageSchema,
 ]);
@@ -52,23 +52,28 @@ const GradeSchema = z
   .union([z.number(), z.string().regex(/^\d{1,2}$/).transform(Number)])
   .pipe(z.number().int().min(1).max(12));
 
+type Turns = { messages: Array<z.output<typeof MessageSchema>> };
+
+export function endsWithQuestion(body: Turns): boolean {
+  const last = body.messages[body.messages.length - 1];
+  return last?.role === "user" && last.content.length > 0;
+}
+export const LAST_MUST_BE_QUESTION = {
+  message: "The last message must be a non-empty question from the user",
+  path: ["messages"],
+};
+export function trimHistory<T extends Turns>(body: T): T {
+  return { ...body, messages: recentTurns(body.messages.filter((m) => m.content.length > 0)) };
+}
+
 export const TeachRequestSchema = z
   .object({
     messages: z.array(MessageSchema).min(1).max(MAX_MESSAGES),
     grade: GradeSchema,
     language: z.enum(LANGUAGES),
   })
-  .refine(
-    (body) => {
-      const last = body.messages[body.messages.length - 1];
-      return last?.role === "user" && last.content.length > 0;
-    },
-    { message: "The last message must be a non-empty question from the user", path: ["messages"] },
-  )
-  .transform((body) => ({
-    ...body,
-    messages: recentTurns(body.messages.filter((m) => m.content.length > 0)),
-  }));
+  .refine(endsWithQuestion, LAST_MUST_BE_QUESTION)
+  .transform(trimHistory);
 
 export type TeachRequest = z.output<typeof TeachRequestSchema>;
 export type ChatTurn = TeachRequest["messages"][number];
