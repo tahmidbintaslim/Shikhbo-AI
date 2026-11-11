@@ -30,10 +30,12 @@ test("only classes with indexed textbooks can be picked", async ({ page }) => {
   await expect(page.getByRole("option", { name: "Class 2" })).toBeDisabled();
 });
 
-test("the hero button focuses the question box", async ({ page }) => {
+test("a subject in the contents list starts the question and focuses the box", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /শুরু করি/ }).click();
+  await page.getByRole("button", { name: /^গণিত/ }).click();
   await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeFocused();
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toHaveValue("আমি গণিত এর সাহায্য চাই।");
+  await expect(page.getByRole("button", { name: /^পদার্থবিজ্ঞান/ })).toBeDisabled();
 });
 
 test("the language switch also picks the textbook", async ({ page }) => {

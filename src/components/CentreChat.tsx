@@ -1,7 +1,5 @@
 "use client";
 import { useState, useSyncExternalStore, type FormEvent } from "react";
-import { Button } from "@heroui/button";
-import { Input } from "@heroui/input";
 import ChatInterface from "@/components/ChatInterface";
 import { ChatProvider, useChatContext } from "@/components/ChatProvider";
 
@@ -28,20 +26,20 @@ function Header({ name }: { name: string }) {
   const { locale, setLocale, setLanguage } = useChatContext();
   const next = locale === "bn" ? "en" : "bn";
   return (
-    <header className="flex items-center justify-between gap-3 px-1 py-2">
-      <h1 className="text-lg font-semibold">{name}</h1>
-      <Button
-        size="sm"
-        variant="bordered"
+    <header className="flex flex-wrap items-end justify-between gap-x-6 pt-8">
+      <h1 className="text-2xl leading-8">{name}</h1>
+      <button
+        type="button"
+        className="khata-btn"
         aria-label={T[locale].switchLabel}
-        onPress={() => {
+        onClick={() => {
           // One switch for the page and the answers, as on the home page.
           setLocale(next);
           setLanguage(next === "bn" ? "bengali" : "english");
         }}
       >
         {T[locale].switchTo}
-      </Button>
+      </button>
     </header>
   );
 }
@@ -80,25 +78,32 @@ function CentreChatInBrowser({ slug, name }: { slug: string; name: string }) {
       setSaved({ ...saved, code });
     };
     return (
-      <main className="mx-auto flex min-h-dvh max-w-sm flex-col justify-center gap-4 p-4">
-        <h1 className="text-2xl font-semibold">{name}</h1>
-        <form onSubmit={join} className="flex flex-col gap-3">
-          <Input
-            label={`${T.bn.joinLabel} / ${T.en.joinLabel}`}
-            description={`${T.bn.joinHelp} ${T.en.joinHelp}`}
+      <main className="khata-page max-w-xl pt-16">
+        <h1>{name}</h1>
+        <form onSubmit={join} noValidate className="mt-8 max-w-sm">
+          <label htmlFor="join-code" className="khata-label">
+            {T.bn.joinLabel} / {T.en.joinLabel}
+          </label>
+          <input
+            id="join-code"
+            className="khata-field"
             value={draft}
-            // An invalid field blocks the form, so typing clears the error.
-            onValueChange={(v) => {
-              setDraft(v);
+            onChange={(e) => {
+              setDraft(e.target.value);
               setRejected(false);
             }}
             autoComplete="off"
-            isInvalid={rejected}
-            errorMessage={rejected ? `${T.bn.rejected} ${T.en.rejected}` : undefined}
+            autoCapitalize="characters"
+            spellCheck={false}
+            aria-invalid={rejected}
+            aria-describedby="join-help"
           />
-          <Button type="submit" color="primary">
+          <p id="join-help" className={rejected ? "khata-error" : "khata-small"} role={rejected ? "alert" : undefined}>
+            {rejected ? `${T.bn.rejected} ${T.en.rejected}` : `${T.bn.joinHelp} ${T.en.joinHelp}`}
+          </p>
+          <button type="submit" className="khata-btn khata-btn-fill khata-btn-tall mt-8">
             {T.bn.join} / {T.en.join}
-          </Button>
+          </button>
         </form>
       </main>
     );
@@ -112,13 +117,13 @@ function CentreChatInBrowser({ slug, name }: { slug: string; name: string }) {
 
   return (
     <ChatProvider centre={{ slug, name, code: saved.code, student: saved.student, onWrongCode: forget }}>
-      <main className="mx-auto flex h-dvh max-w-3xl flex-col p-3">
+      <div className="khata-page flex min-h-dvh max-w-3xl flex-col">
         <Header name={name} />
-        <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10">
+        <main className="mt-8 flex-1">
           <ChatInterface />
-        </div>
-        <p className="pt-2 text-center text-xs text-foreground/60">Powered by Bongo AI</p>
-      </main>
+        </main>
+        <p className="khata-small pb-8">Powered by Bongo AI</p>
+      </div>
     </ChatProvider>
   );
 }

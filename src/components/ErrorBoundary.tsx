@@ -1,7 +1,5 @@
 "use client";
 import React from "react";
-import { Button } from "@heroui/button";
-import { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -32,24 +30,13 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <div className="status-shell">
-          <Card className="status-card">
-            <CardHeader>
-              <h2 className="status-title">Oops! Something went wrong</h2>
-            </CardHeader>
-            <CardBody>
-              <p className="status-text">
-                We're sorry, but an error occurred. Please try refreshing the
-                page.
-              </p>
-            </CardBody>
-            <CardFooter className="status-actions">
-              <Button color="primary" onPress={() => window.location.reload()}>
-                Refresh Page
-              </Button>
-            </CardFooter>
-          </Card>
-        </div>
+        <main className="khata-page max-w-xl pt-16">
+          <h1>কিছু একটা ভুল হয়েছে।</h1>
+          <p className="text-pencil">Something went wrong. Please refresh the page.</p>
+          <button type="button" className="khata-btn khata-btn-fill khata-btn-tall mt-8" onClick={() => window.location.reload()}>
+            পাতাটি আবার খোলো
+          </button>
+        </main>
       );
     }
 

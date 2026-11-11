@@ -1,183 +1,403 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 
-/* 1. Register HeroUI */
 @plugin "../../hero.ts";
-/* Styles the Markdown answers (`prose` classes in ChatInterface). */
-@plugin "@tailwindcss/typography";
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
-/* 2. Custom Theme Variables */
-@theme {
-  --animate-float: float 6s ease-in-out infinite;
+/*
+ * The whole site is one page of a ruled school exercise copy (khata).
+ * Everything sits on a 2rem line: text line-heights and vertical spacing are
+ * whole lines (Tailwind's 8 = one line), so words rest on the blue rules.
+ */
+:root {
+  --paper: #fdfeff;
+  --rule: #c3daf2;
+  --margin: #e0563f;
+  --ink: #1d3a9e; /* ballpoint blue: what the student writes, and actions */
+  --ink-deep: #132769;
+  --lead: #1c2333; /* the worked answer */
+  --pencil: #4a5670; /* secondary text */
+  --red-ink: #c21f30; /* teacher's marks only: ticks, references, errors */
+  --highlight: #fff2a8;
+  --line: 2rem;
+  --gutter: 1.25rem; /* where the red margin line runs */
+  --rule-offset: 1.56rem; /* drops the rule under the text baseline */
+}
 
-  /* Brand Gradients */
-  --bg-gradient-light:
-    radial-gradient(at 0% 0%, rgba(18, 53, 91, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(252, 186, 4, 0.1) 0px, transparent 50%);
-
-  --bg-gradient-dark: linear-gradient(to bottom right, #0f1419, #1a1d2e);
-
-  /* Animations */
-  --animate-fade-in-up: fade-in-up 0.8s ease-out forwards;
-  --animate-pulse-slow: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-
-  /* Fonts */
-  --font-heading:
-    var(--font-outfit), var(--font-hind), ui-sans-serif, system-ui, sans-serif;
-  --font-sans:
-    var(--font-inter), var(--font-noto), ui-sans-serif, system-ui, sans-serif;
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  @keyframes fade-in-up {
-    0% {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
+@media (min-width: 48rem) {
+  :root {
+    --gutter: 4rem;
   }
 }
 
-@layer utilities {
-  /* --- SPACING & LAYOUT --- */
-  .glass-p {
-    @apply p-6 md:p-8;
-  }
-
-  .section-spacing {
-    @apply py-16 md:py-24;
-  }
-
-  .glass-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8;
-  }
-
-  /* --- SURFACES --- */
-  .glass-panel {
-    /* Shared Base Properties */
-    @apply backdrop-blur-xl border transition-all duration-300;
-
-    /* Panel Specifics */
-    @apply shadow-lg;
-    @apply bg-white/5 border-white/40;
-    box-shadow:
-      0 5px 10px rgba(15, 23, 42, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    @apply dark:bg-black/70 dark:border-white/25;
-  }
-
-  .glass-card {
-    /* Shared Base Properties */
-    @apply backdrop-blur-xl border transition-all duration-300;
-
-    /* Card Specifics */
-    @apply shadow-md rounded-medium;
-    @apply bg-white/5 border-white/25;
-    box-shadow:
-      0 5px 10px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    @apply dark:bg-black/70 dark:border-white/25;
-  }
-
-  .glass-card-hover {
-    @apply backdrop-blur-xl border transition-all duration-300 shadow-sm rounded-medium;
-    @apply bg-white/5 border-white/25;
-    box-shadow:
-      0 5px 10px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    @apply dark:bg-black/70 dark:border-white/25;
-    /* Hover Logic */
-    @apply hover:-translate-y-1 hover:shadow-lg cursor-pointer;
-    @apply hover:bg-white/85 hover:border-primary/40;
-    @apply dark:hover:bg-black/75 dark:hover:border-white/40;
-  }
-
-  /* --- INTERACTIVES --- */
-  .glass-btn {
-    @apply backdrop-blur-md border shadow-sm font-medium transition-transform active:scale-95;
-    @apply bg-white/5 border-white/25 text-primary;
-    @apply dark:bg-black/70 dark:border-white/25 dark:text-white;
-  }
-
-  .glass-btn:hover {
-    @apply bg-primary/10 border-primary/50 text-primary;
-    @apply dark:bg-black/80 dark:border-white/40;
-  }
-
-  .glass-btn-primary {
-    @apply backdrop-blur-md border font-medium transition-transform active:scale-95;
-    @apply shadow-md;
-    @apply bg-primary/80 text-white border-transparent;
-    @apply dark:bg-primary/80;
-  }
-
-  .glass-btn-primary:hover {
-    @apply bg-primary text-white shadow-primary/40;
-  }
-
-  /* --- INPUTS --- */
-  .glass-input-wrapper {
-    @apply !bg-white/40 !backdrop-blur-md !border-white/25 !shadow-sm;
-    @apply dark:!bg-black/60 dark:!border-white/25;
-  }
-
-  .group[data-focus="true"] .glass-input-wrapper {
-    @apply !bg-white/80 !border-primary;
-    @apply dark:!bg-black/75 dark:!border-white/40;
-  }
+@theme inline {
+  --color-paper: var(--paper);
+  --color-rule: var(--rule);
+  --color-margin: var(--margin);
+  --color-ink: var(--ink);
+  --color-ink-deep: var(--ink-deep);
+  --color-lead: var(--lead);
+  --color-pencil: var(--pencil);
+  --color-red-ink: var(--red-ink);
+  --color-highlight: var(--highlight);
+  --font-heading: var(--font-tiro), "Tiro Bangla", serif;
+  --font-sans: var(--font-hind), "Hind Siliguri", system-ui, sans-serif;
 }
 
-/* 3. Base Styles */
 @layer base {
+  html {
+    color-scheme: light;
+    scrollbar-color: var(--rule) var(--paper);
+    scrollbar-width: thin;
+  }
+
   body {
-    @apply antialiased min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary;
-    @apply font-sans text-base md:text-lg leading-relaxed;
-    background-image: var(--bg-gradient-light);
-    background-attachment: fixed;
+    @apply antialiased min-h-screen font-sans;
+    color: var(--lead);
+    font-size: 1.0625rem;
+    line-height: var(--line);
+    caret-color: var(--ink);
+    background-color: var(--paper);
+    background-image:
+      linear-gradient(
+        90deg,
+        transparent calc(var(--gutter) - 1px),
+        var(--margin) calc(var(--gutter) - 1px),
+        var(--margin) calc(var(--gutter) + 1px),
+        transparent calc(var(--gutter) + 1px)
+      ),
+      linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px));
+    background-size:
+      100% 100%,
+      100% var(--line);
+    background-position:
+      0 0,
+      0 var(--rule-offset);
   }
 
-  .dark body {
-    background-image: var(--bg-gradient-dark);
+  ::selection {
+    background: var(--highlight);
+    color: var(--ink-deep);
   }
 
-  /* Typography Defaults */
   h1,
-  h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-heading text-foreground tracking-tight;
+  h2 {
+    @apply font-heading;
+    color: var(--ink-deep);
+    text-wrap: balance;
   }
 
   h1 {
-    @apply text-5xl md:text-7xl lg:text-8xl font-black;
-    line-height: 1.1;
-  }
-  h2 {
-    @apply text-4xl md:text-5xl lg:text-6xl font-extrabold;
-    line-height: 1.15;
-  }
-  h3 {
-    @apply text-2xl md:text-3xl font-bold;
-  }
-  h4 {
-    @apply text-xl md:text-2xl font-bold;
+    font-size: clamp(2rem, 6.2vw, 3.25rem);
+    line-height: calc(var(--line) * 2);
+    letter-spacing: -0.01em;
   }
 
-  p {
-    @apply text-default-600 dark:text-default-400;
+  @media (max-width: 48rem) {
+    h1 {
+      line-height: calc(var(--line) * 1.5);
+    }
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    line-height: var(--line);
+  }
+
+  a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ink-deep);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* The writing area: clear of the red margin line on the left. */
+  .khata-page {
+    margin-inline: auto;
+    max-width: 72rem;
+    padding-left: calc(var(--gutter) + 0.875rem);
+    padding-right: 1rem;
+  }
+
+  .khata-small {
+    font-size: 0.9375rem;
+    color: var(--pencil);
+  }
+
+  /* A hand-ruled box: actions. One line tall, so it does not break the rules. */
+  .khata-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: var(--line);
+    padding: 0 0.875rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    background: var(--paper);
+    color: var(--ink);
+    font-weight: 600;
+    line-height: 1.25;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease-out,
+      color 160ms ease-out,
+      transform 80ms ease-out;
+  }
+  .khata-btn:hover {
+    background: color-mix(in oklab, var(--ink) 9%, var(--paper));
+  }
+  .khata-btn:active {
+    transform: translateY(1px);
+  }
+  .khata-btn:disabled {
+    cursor: not-allowed;
+    border-color: var(--pencil);
+    color: var(--pencil);
+    background: var(--paper);
+  }
+  .khata-btn-fill {
+    background: var(--ink);
+    color: #fff;
+  }
+  .khata-btn-fill:hover {
+    background: var(--ink-deep);
+  }
+  .khata-btn-fill:disabled {
+    background: var(--pencil);
+    color: #fff;
+  }
+  /* 44px touch target on the main action without leaving the line grid. */
+  .khata-btn-tall {
+    min-height: calc(var(--line) * 1.5);
+    margin-block: calc(var(--line) * 0.25);
+  }
+
+  /* Text you tap, written in pen: starters, index rows, small tools. */
+  .khata-link {
+    color: var(--ink);
+    font-weight: 500;
+    text-align: start;
+    text-decoration: underline dotted;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 0.3em;
+    cursor: pointer;
+  }
+  .khata-link:hover {
+    color: var(--ink-deep);
+    text-decoration-style: solid;
+  }
+  .khata-link:disabled {
+    color: var(--pencil);
+    text-decoration: none;
+    cursor: not-allowed;
+  }
+
+  /* A field is the line you write on: its ink line is drawn exactly over
+     the page's blue rule, one per line of text. */
+  .khata-field {
+    --field-ink: var(--ink);
+    display: block;
+    width: 100%;
+    min-height: var(--line);
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background-color: transparent;
+    background-image: linear-gradient(
+      to bottom,
+      transparent calc(var(--line) - 1.5px),
+      var(--field-ink) calc(var(--line) - 1.5px)
+    );
+    background-size: 100% var(--line);
+    background-position: 0 var(--rule-offset);
+    background-attachment: local;
+    color: var(--ink);
+    font: inherit;
+    line-height: var(--line);
+    resize: none;
+    field-sizing: content;
+  }
+  .khata-field::placeholder {
+    color: var(--pencil);
+    opacity: 1;
+  }
+  .khata-field:focus-visible {
+    outline: none;
+    --field-ink: var(--ink-deep);
+    background-color: color-mix(in oklab, var(--highlight) 45%, transparent);
+  }
+  .khata-field[aria-invalid="true"] {
+    --field-ink: var(--red-ink);
+  }
+
+  input[type="file"]::file-selector-button {
+    margin-right: 0.75rem;
+    padding: 0 0.75rem;
+    border: 1.5px solid var(--ink);
+    border-radius: 2px;
+    background: var(--paper);
+    color: var(--ink);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .khata-label {
+    display: block;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--pencil);
+  }
+
+  .khata-error {
+    color: var(--red-ink);
+    font-weight: 500;
+  }
+
+  /* Contents-page row: name, dotted leader, value. */
+  .khata-leader {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+  }
+  .khata-leader::after {
+    content: "";
+    order: 1;
+    flex: 1;
+    min-width: 1.5rem;
+    border-bottom: 2px dotted var(--pencil);
+    transform: translateY(-0.3em);
+  }
+  .khata-leader > :last-child {
+    order: 2;
+  }
+
+  /* A worked answer in Markdown, kept on the lines. */
+  .khata-prose {
+    overflow-wrap: anywhere;
+  }
+  .khata-prose :is(h1, h2, h3, h4) {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: 700;
+    line-height: var(--line);
+    letter-spacing: 0;
+    color: var(--ink-deep);
+  }
+  .khata-prose :is(ul, ol) {
+    padding-left: 1.5rem;
+  }
+  .khata-prose ul {
+    list-style: disc;
+  }
+  .khata-prose ol {
+    list-style: decimal;
+  }
+  .khata-prose strong {
+    color: var(--ink-deep);
+  }
+  .khata-prose code {
+    font-size: 0.9em;
+    background: color-mix(in oklab, var(--rule) 45%, transparent);
+    padding: 0 0.25em;
+  }
+  .khata-prose pre {
+    overflow-x: auto;
+    margin-block: calc(var(--line) / 2);
+    padding: calc(var(--line) / 2) 0.75rem;
+    border: 1.5px solid var(--rule);
+    background: var(--paper);
+    line-height: 1.5;
+  }
+  .khata-prose pre code {
+    background: none;
+    padding: 0;
+  }
+  .khata-prose table {
+    border-collapse: collapse;
+  }
+  .khata-prose :is(th, td) {
+    border: 1px solid var(--pencil);
+    padding: 0 0.5rem;
+  }
+  .khata-prose .katex-display {
+    margin-block: var(--line);
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .khata-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .khata-table :is(th, td) {
+    border: 1.5px solid var(--ink);
+    padding: 0 0.625rem;
+    text-align: start;
+    background: var(--paper);
+  }
+  .khata-table th {
+    font-weight: 600;
+    color: var(--pencil);
+    font-size: 0.9375rem;
+  }
+}
+
+/* The one authored moment: a new answer is written onto the page line by
+   line, and the teacher's tick comes last. */
+@media (prefers-reduced-motion: no-preference) {
+  .khata-write > * {
+    animation: khata-write 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .khata-write > :nth-child(2) { animation-delay: 140ms; }
+  .khata-write > :nth-child(3) { animation-delay: 280ms; }
+  .khata-write > :nth-child(4) { animation-delay: 420ms; }
+  .khata-write > :nth-child(5) { animation-delay: 560ms; }
+  .khata-write > :nth-child(n + 6) { animation-delay: 700ms; }
+
+  .khata-write + .khata-tick path {
+    stroke-dasharray: 30;
+    animation: khata-tick 380ms cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
+  }
+
+  .khata-writing::after {
+    content: "";
+    display: inline-block;
+    width: 2px;
+    height: 1.1em;
+    margin-left: 2px;
+    vertical-align: text-bottom;
+    background: var(--ink);
+    animation: khata-caret 1s steps(2, jump-none) infinite;
+  }
+}
+
+@keyframes khata-write {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+@keyframes khata-tick {
+  from {
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes khata-caret {
+  50% {
+    opacity: 0;
   }
 }
