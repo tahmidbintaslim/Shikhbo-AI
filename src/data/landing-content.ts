@@ -1,62 +1,38 @@
-import { BookOpen, Calculator, Cpu, FlaskConical, Globe } from "lucide-react";
-
 // `indexed`: the subject's textbooks are in the index for the indexed classes
 // (books/sources.json: Class 1 Bangla, English and Math). The others show as
 // "coming soon" and cannot be picked.
 export const SUBJECTS = [
-  { id: "math", name: { bn: "গণিত", en: "Math" }, icon: Calculator, color: "text-blue-400", indexed: true },
-  { id: "bangla", name: { bn: "বাংলা", en: "Bangla" }, icon: BookOpen, color: "text-rose-400", indexed: true },
-  { id: "english", name: { bn: "ইংরেজি", en: "English" }, icon: Globe, color: "text-pink-400", indexed: true },
-  { id: "physics", name: { bn: "পদার্থবিজ্ঞান", en: "Physics" }, icon: FlaskConical, color: "text-purple-400", indexed: false },
-  { id: "chemistry", name: { bn: "রসায়ন", en: "Chemistry" }, icon: FlaskConical, color: "text-teal-400", indexed: false },
-  { id: "ict", name: { bn: "তথ্য ও প্রযুক্তি", en: "ICT" }, icon: Cpu, color: "text-cyan-400", indexed: false },
+  { id: "math", name: { bn: "গণিত", en: "Math" }, indexed: true },
+  { id: "bangla", name: { bn: "বাংলা", en: "Bangla" }, indexed: true },
+  { id: "english", name: { bn: "ইংরেজি", en: "English" }, indexed: true },
+  { id: "physics", name: { bn: "পদার্থবিজ্ঞান", en: "Physics" }, indexed: false },
+  { id: "chemistry", name: { bn: "রসায়ন", en: "Chemistry" }, indexed: false },
+  { id: "ict", name: { bn: "তথ্য ও প্রযুক্তি", en: "ICT" }, indexed: false },
 ];
 
 export const CONTENT = {
   bn: {
-    hero: {
-      badge: "সম্পূর্ণ ফ্রি • ২৪/৭ অ্যাক্টিভ",
-      title: "তোমার পার্সোনাল\nএআই টিউটর",
-      subtitle: "বাংলা বা ইংরেজিতে প্রশ্ন করো। আপাতত শুধু প্রথম শ্রেণির NCTB বাংলা, ইংরেজি ও গণিত বই থেকে উত্তর খোঁজা হয়।",
-      cta: "পড়া শুরু করি",
-      stats: ["বাংলা ও ইংরেজি মাধ্যম", "বিনামূল্যে ব্যবহার"],
-    },
-    syllabus: {
-      title: "আজকে কি শিখবে?",
-      subtitle: "তোমার পছন্দের বিষয় বেছে নাও",
-    },
-    compare: {
-      title: "কেন Shikhbo AI সেরা?",
-      private: "প্রাইভেট টিউটর",
-      us: "Shikhbo AI",
-      points: [
-        { label: "খরচ", p: "উচ্চ খরচ", u: "সম্পূর্ণ ফ্রি" },
-        { label: "সময়", p: "নির্দিষ্ট সময়", u: "২৪/৭ যেকোনো সময়" },
-      ],
-    },
+    brand: "শিখবো AI",
+    title: "বাড়ির কাজে আটকে গেছ?\nএখানে লিখে ফেলো।",
+    subtitle: "বাংলা বা ইংরেজিতে প্রশ্ন করো। আপাতত শুধু প্রথম শ্রেণির NCTB বাংলা, ইংরেজি ও গণিত বই থেকে উত্তর খোঁজা হয়।",
+    classLabel: "শ্রেণি",
+    soon: "শীঘ্রই",
+    contents: "সূচিপত্র",
+    contentsHelp: "একটি বিষয় বেছে নিলে প্রশ্নের ঘরে লেখা শুরু হবে।",
+    footer: "বিনামূল্যে ব্যবহার। কোনো অ্যাপ লাগবে না।",
+    main: "মূল বিষয়বস্তু",
   },
   en: {
-    hero: {
-      badge: "100% Free • Active 24/7",
-      title: "Your Personal\nAI Tutor",
-      subtitle: "Ask a question in Bangla or English. For now, textbook lookup covers NCTB Class 1 Bangla, English and Math books only.",
-      cta: "Start Learning",
-      stats: ["Bangla and English medium", "Free to use"],
-    },
-    syllabus: {
-      title: "What will you learn today?",
-      subtitle: "Choose your subject",
-    },
-    compare: {
-      title: "Why Shikhbo AI?",
-      private: "Private Tutor",
-      us: "Shikhbo AI",
-      points: [
-        { label: "Cost", p: "Expensive", u: "Totally Free" },
-        { label: "Time", p: "Fixed Schedule", u: "Anytime (24/7)" },
-      ],
-    },
+    brand: "Shikhbo AI",
+    title: "Stuck on your homework?\nWrite it down here.",
+    subtitle: "Ask a question in Bangla or English. For now, textbook lookup covers NCTB Class 1 Bangla, English and Math books only.",
+    classLabel: "Class",
+    soon: "coming soon",
+    contents: "Contents",
+    contentsHelp: "Pick a subject to start your question with it.",
+    footer: "Free to use. No app required.",
+    main: "Main content",
   },
-};
+} as const;
 
 export default CONTENT;

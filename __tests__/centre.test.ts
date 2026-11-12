@@ -98,3 +98,20 @@ describe("store client, centre ops", () => {
         ]);
     });
 });
+
+describe("citedSource", () => {
+    const { citedSource } = require("../src/lib/retrieval") as typeof import("../src/lib/retrieval");
+    const matches = [
+        { source: "Class 1 Bangla.pdf, page 4", text: "a", similarity: 0.9 },
+        { source: "Class 1 Math_compressed.pdf, page 12", text: "b", similarity: 0.8 },
+    ];
+    test("names the retrieved page the answer cites, in English or Bangla digits", () => {
+        expect(citedSource("The answer is 7 (page 12).", matches)).toBe("Class 1 Math, page 12");
+        expect(citedSource("উত্তর: ৭ (গণিত বই, পৃষ্ঠা ১২)", matches)).toBe("Class 1 Math, page 12");
+    });
+    test("is null when the answer cites nothing, or a page the search did not return", () => {
+        expect(citedSource("The answer is 7.", matches)).toBeNull();
+        expect(citedSource("See page 99.", matches)).toBeNull();
+        expect(citedSource("See page 12.", [])).toBeNull();
+    });
+});

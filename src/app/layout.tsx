@@ -1,31 +1,22 @@
-import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Outfit } from "next/font/google";
+import { Hind_Siliguri, Tiro_Bangla } from "next/font/google";
 import React from "react";
 import "./globals.css";
 import { Providers } from "./provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const outfit = Outfit({
-  subsets: ["latin"],
-  variable: "--font-outfit",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+// Tiro Bangla is the printed voice of a Bangla textbook; Hind Siliguri is the
+// handwriting-plain workhorse for everything written on the lines.
+const tiro = Tiro_Bangla({
+  weight: "400",
+  subsets: ["bengali", "latin"],
+  variable: "--font-tiro",
   display: "swap",
 });
 
 const hindSiliguri = Hind_Siliguri({
-  weight: ["300", "400", "500", "600", "700"],
-  subsets: ["bengali"],
+  weight: ["400", "500", "600", "700"],
+  subsets: ["bengali", "latin"],
   variable: "--font-hind",
-  display: "swap",
-});
-
-const notoSansBengali = Noto_Sans_Bengali({
-  subsets: ["bengali"],
-  variable: "--font-noto",
   display: "swap",
 });
 
@@ -111,9 +102,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="bn" suppressHydrationWarning>
+    <html lang="bn" className="light" suppressHydrationWarning>
       <body
-        className={`${inter.variable} ${outfit.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} antialiased`}
+        className={`${tiro.variable} ${hindSiliguri.variable}`}
       >
         <ErrorBoundary>
           <Providers>{children}</Providers>

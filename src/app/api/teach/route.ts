@@ -8,8 +8,8 @@ import { CHAT_KEY_NAMES, createOptional, readServiceConfig } from "@/lib/config"
 import { getModelConfig } from "@/lib/models";
 import { createRateLimiter } from "@/lib/rate-limit";
 import { buildCentrePrompt, parseCentreRequest, splitCoverage } from "@/lib/centre";
-import { RETRIEVAL_TOP_K, formatContext, retrieveContext } from "@/lib/retrieval";
-import { StoreError, createStore } from "@/lib/store";
+import { RETRIEVAL_TOP_K, citedSource, formatContext, retrieveContext } from "@/lib/retrieval";
+import { StoreError, createStore, type TextbookMatch } from "@/lib/store";
 import {
   buildSystemPrompt,
   errorSummary,
@@ -185,14 +185,18 @@ async function centreAnswer(body: unknown, student: string) {
     }
     const { text, covered } = splitCoverage(answer);
 
+    // The nearest note, when the notes covered the question: logged for the
+    // owner and shown to the student beside the answer.
+    const source = covered ? (found.matches[0]?.source ?? null) : null;
+
     // shortcut: a greeting counts as a covered question about the nearest
     // note; add a second marker for small talk if it clutters the dashboard.
     try {
-        await store.centreLog(centre.slug, centre.code, student, question, covered ? (found.matches[0]?.source ?? null) : null);
+        await store.centreLog(centre.slug, centre.code, student, question, source);
     } catch (err) {
         console.warn(`[teach] centre question not logged: ${errorSummary(err)}`);
     }
-    return NextResponse.json({ result: text || NOT_IN_NOTES_REPLY[language] });
+    return NextResponse.json({ result: text || NOT_IN_NOTES_REPLY[language], ...(source ? { source } : {}) });
 }
 
 export async function POST(req: Request) {
@@ -255,9 +259,10 @@ export async function POST(req: Request) {
         // ---------------------------------------------------------
         // RETRIEVAL (RAG). Failures and timeouts degrade to no context.
         // ---------------------------------------------------------
+        let matches: TextbookMatch[] = [];
         const contextText = store
             ? await retrieveContext({ query: question, grade, language }, {
-                search: (query, g, medium, topK, signal) => store.match(query, g, medium, topK, signal),
+                search: async (query, g, medium, topK, signal) => (matches = await store.match(query, g, medium, topK, signal)),
             })
             : "";
 
@@ -272,7 +277,10 @@ export async function POST(req: Request) {
         }
 
         await setCachedResponse(cacheKey, result);
-        return NextResponse.json({ result });
+        // shortcut: a cached answer is returned without its source; cache the
+        // source with the text if students miss the reference on repeats.
+        const source = citedSource(result, matches);
+        return NextResponse.json({ result, ...(source ? { source } : {}) });
     } catch (error) {
         console.error(`[teach] request failed: ${errorSummary(error)}`);
         return errorResponse(500, "internal_error", "Failed to process request");

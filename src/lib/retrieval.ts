@@ -35,6 +35,22 @@ export function formatContext(matches: Array<Partial<TextbookMatch>>): string {
 }
 
 /**
+ * The retrieved page the answer itself cites ("page 12", "পৃষ্ঠা ১২"), as a
+ * label for the student, or null. Only a page the model named and the
+ * search really returned is shown as the source: the top match alone proves
+ * nothing about what the answer used.
+ */
+export function citedSource(answer: string, matches: Array<Partial<TextbookMatch>>): string | null {
+  const latin = answer.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
+  const cited = new Set(Array.from(latin.matchAll(/(?:page|পৃষ্ঠা(?:র|য়)?)\s*(\d{1,4})/gi), (m) => m[1]));
+  for (const match of matches) {
+    const page = typeof match.source === "string" ? /page (\d+)/i.exec(match.source)?.[1] : undefined;
+    if (page && cited.has(page)) return sourceLabel(match.source as string);
+  }
+  return null;
+}
+
+/**
  * Textbook passages for the question, or "" when retrieval fails or is slow.
  * Never throws: a broken or unreachable store must not turn
  * into a failed answer, the tutor just answers without textbook context.

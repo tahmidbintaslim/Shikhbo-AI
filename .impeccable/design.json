@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T00:00:00Z",
+  "title": "Design System: Shikhbo AI",
+  "extensions": {
+    "colorMeta": {
+      "ink": {
+        "role": "primary",
+        "displayName": "Ballpoint Blue",
+        "tonalRamp": [
+          "#0a1640",
+          "#132769",
+          "#1d3a9e",
+          "#3b5bc4",
+          "#6a86dc",
+          "#9db1ea",
+          "#cdd7f5",
+          "#eef2fc"
+        ]
+      },
+      "ink-deep": {
+        "role": "primary",
+        "displayName": "Ballpoint Blue, pressed hard",
+        "tonalRamp": [
+          "#080f2b",
+          "#0d1b4a",
+          "#132769",
+          "#2a4290",
+          "#5a70b5",
+          "#94a3d2",
+          "#c9d1ea",
+          "#eef0f9"
+        ]
+      },
+      "red-ink": {
+        "role": "secondary",
+        "displayName": "Teacher's Red",
+        "tonalRamp": [
+          "#3d0810",
+          "#6e101b",
+          "#9a1826",
+          "#c21f30",
+          "#d9525f",
+          "#e88c95",
+          "#f4c5c9",
+          "#fceeef"
+        ]
+      },
+      "highlight": {
+        "role": "tertiary",
+        "displayName": "Highlighter Yellow",
+        "tonalRamp": [
+          "#3d3608",
+          "#6b5f12",
+          "#9c8b22",
+          "#ccb840",
+          "#e8d766",
+          "#fff2a8",
+          "#fff7cc",
+          "#fffcea"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Copy Paper",
+        "tonalRamp": [
+          "#20262c",
+          "#454e57",
+          "#6e7983",
+          "#9aa5ae",
+          "#c3ccd4",
+          "#e2e8ed",
+          "#f3f7fa",
+          "#fdfeff"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Printed Rule Blue",
+        "tonalRamp": [
+          "#0f2338",
+          "#1e4268",
+          "#346699",
+          "#5a8cc0",
+          "#8fb4dc",
+          "#c3daf2",
+          "#e7f0fa",
+          "#f5f9fd"
+        ]
+      },
+      "margin": {
+        "role": "neutral",
+        "displayName": "Margin Red",
+        "tonalRamp": [
+          "#3f120a",
+          "#742414",
+          "#a8371f",
+          "#e0563f",
+          "#ea8370",
+          "#f2ada0",
+          "#f9d5ce",
+          "#fdf0ed"
+        ]
+      },
+      "lead": {
+        "role": "neutral",
+        "displayName": "Lead",
+        "tonalRamp": [
+          "#0e121b",
+          "#1c2333",
+          "#343d52",
+          "#525c74",
+          "#7a849a",
+          "#a7afc0",
+          "#d2d7e0",
+          "#f0f2f5"
+        ]
+      },
+      "pencil": {
+        "role": "neutral",
+        "displayName": "Pencil Grey",
+        "tonalRamp": [
+          "#161b26",
+          "#2b3447",
+          "#4a5670",
+          "#6b7791",
+          "#919bb1",
+          "#b8bfce",
+          "#dadee6",
+          "#f2f3f6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The home page heading only. Two rules per line; 3rem line-height below 48rem."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headings, the brand line, and page headings on centre, join, dashboard, 404 and error pages."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Answers and running text, one rule per line; supporting paragraphs capped at 60ch."
+      },
+      "action": {
+        "displayName": "Action",
+        "purpose": "Button labels."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Field labels in pencil; the source reference in teacher's red."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Help text, statuses, footers."
+      }
+    },
+    "shadows": [],
+    "motion": [
+      {
+        "name": "write",
+        "value": "clip-path inset(0 100% 0 0) to inset(0) 520ms cubic-bezier(0.16, 1, 0.3, 1), 140ms stagger per block",
+        "purpose": "A new answer is written onto the page line by line."
+      },
+      {
+        "name": "source",
+        "value": "write 420ms cubic-bezier(0.16, 1, 0.3, 1) 820ms",
+        "purpose": "The red source reference is written after the answer."
+      },
+      {
+        "name": "tick",
+        "value": "stroke-dashoffset 30 to 0, 380ms cubic-bezier(0.16, 1, 0.3, 1) 900ms",
+        "purpose": "The teacher's tick is drawn last."
+      },
+      {
+        "name": "caret",
+        "value": "opacity blink 1s steps(2, jump-none) infinite",
+        "purpose": "Waiting and loading: a pencil line ending in a blinking ink caret."
+      },
+      {
+        "name": "press",
+        "value": "background-color, color 160ms ease-out; transform 80ms ease-out",
+        "purpose": "Button hover and 1px press."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "md",
+        "value": "48rem"
+      },
+      {
+        "name": "lg",
+        "value": "64rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Outlined Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "A hand-ruled box one line tall, for secondary actions.",
+      "html": "<button class=\"ds-btn\">English</button>",
+      "css": ".ds-btn { display: inline-flex; align-items: center; justify-content: center; min-height: 2rem; padding: 0 0.875rem; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--paper); color: var(--ink); font: 600 1.0625rem/1.25 'Hind Siliguri', system-ui, sans-serif; cursor: pointer; transition: background-color 160ms ease-out, color 160ms ease-out, transform 80ms ease-out; } .ds-btn:hover { background: color-mix(in oklab, var(--ink) 9%, var(--paper)); } .ds-btn:active { transform: translateY(1px); } .ds-btn:focus-visible { outline: 2px solid var(--ink-deep); outline-offset: 2px; } .ds-btn:disabled { cursor: not-allowed; border-color: var(--pencil); color: var(--pencil); }"
+    },
+    {
+      "name": "Filled Button",
+      "kind": "button",
+      "refersTo": "button-fill",
+      "description": "The one main action of a form or view, two rules tall with its margins.",
+      "html": "<button class=\"ds-btn-fill\">পাঠাও</button>",
+      "css": ".ds-btn-fill { display: inline-flex; align-items: center; justify-content: center; min-height: 3rem; margin-block: 0.5rem; padding: 0 0.875rem; border: 1.5px solid var(--ink); border-radius: 2px; background: var(--ink); color: #fff; font: 600 1.0625rem/1.25 'Hind Siliguri', system-ui, sans-serif; cursor: pointer; transition: background-color 160ms ease-out, transform 80ms ease-out; } .ds-btn-fill:hover { background: var(--ink-deep); } .ds-btn-fill:active { transform: translateY(1px); } .ds-btn-fill:focus-visible { outline: 2px solid var(--ink-deep); outline-offset: 2px; } .ds-btn-fill:disabled { cursor: not-allowed; border-color: var(--pencil); background: var(--pencil); }"
+    },
+    {
+      "name": "Tap-link",
+      "kind": "custom",
+      "refersTo": "link",
+      "description": "Text you tap, written in pen: starters, index rows, small tools.",
+      "html": "<button class=\"ds-link\">গণিত</button>",
+      "css": ".ds-link { border: 0; padding: 0; background: none; color: var(--ink); font: 500 1.0625rem/2rem 'Hind Siliguri', system-ui, sans-serif; text-align: start; text-decoration: underline dotted; text-decoration-thickness: 1.5px; text-underline-offset: 0.3em; cursor: pointer; } .ds-link:hover { color: var(--ink-deep); text-decoration-style: solid; } .ds-link:focus-visible { outline: 2px solid var(--ink-deep); outline-offset: 2px; } .ds-link:disabled { color: var(--pencil); text-decoration: none; cursor: not-allowed; }"
+    },
+    {
+      "name": "Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "The line you write on, with its label above.",
+      "html": "<label class=\"ds-label\" for=\"ds-f\">শিরোনাম</label><input id=\"ds-f\" class=\"ds-field\" placeholder=\"একটি প্রশ্ন লেখো...\">",
+      "css": ".ds-label { display: block; font: 600 0.9375rem/2rem 'Hind Siliguri', system-ui, sans-serif; color: var(--pencil); } .ds-field { --ds-field-ink: var(--ink); display: block; width: 100%; min-height: 2rem; padding: 0; border: 0; border-radius: 0; background-color: transparent; background-image: linear-gradient(to bottom, transparent calc(2rem - 1.5px), var(--ds-field-ink) calc(2rem - 1.5px)); background-size: 100% 2rem; color: var(--ink); caret-color: var(--ink); font: 400 1.0625rem/2rem 'Hind Siliguri', system-ui, sans-serif; } .ds-field::placeholder { color: var(--pencil); opacity: 1; } .ds-field:focus-visible { outline: none; --ds-field-ink: var(--ink-deep); background-color: color-mix(in oklab, var(--highlight) 45%, transparent); } .ds-field[aria-invalid=\"true\"] { --ds-field-ink: var(--red-ink); }"
+    },
+    {
+      "name": "Contents Row",
+      "kind": "custom",
+      "refersTo": "link",
+      "description": "Name, dotted leader, value: the copy's index page.",
+      "html": "<div class=\"ds-leader\"><span>সক্রিয় শিক্ষার্থী</span><span class=\"ds-leader-value\">২</span></div>",
+      "css": ".ds-leader { display: flex; align-items: baseline; gap: 0.5rem; min-width: 16rem; font: 400 1.0625rem/2rem 'Hind Siliguri', system-ui, sans-serif; color: var(--lead); } .ds-leader::after { content: ''; order: 1; flex: 1; min-width: 1.5rem; border-bottom: 2px dotted var(--pencil); transform: translateY(-0.3em); } .ds-leader > :last-child { order: 2; } .ds-leader-value { font-weight: 700; color: var(--ink-deep); }"
+    },
+    {
+      "name": "Marked Answer",
+      "kind": "custom",
+      "refersTo": "source-reference",
+      "description": "A worked answer in lead with the teacher's red source reference and tick.",
+      "html": "<div class=\"ds-answer\"><svg class=\"ds-tick\" viewBox=\"0 0 28 22\" fill=\"none\" aria-hidden=\"true\"><path d=\"M3 12.5 10 19 25 3\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg><p class=\"ds-question\"><b>প্রশ্ন:</b> ৩ আর ৪ যোগ করলে কত হয়?</p><p><b>উত্তর: ৭</b></p><p class=\"ds-source\">গণিত বই, পৃষ্ঠা ১২</p></div>",
+      "css": ".ds-answer { position: relative; padding-left: 2.5rem; font: 400 1.0625rem/2rem 'Hind Siliguri', system-ui, sans-serif; color: var(--lead); } .ds-answer p { margin: 0; } .ds-answer b { color: var(--ink-deep); } .ds-question { color: var(--ink); } .ds-source { font-size: 0.9375rem; font-weight: 600; color: var(--red-ink); text-align: end; } .ds-tick { position: absolute; left: 0.5rem; bottom: 2.45rem; width: 1.5rem; color: var(--red-ink); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Exercise Copy",
+    "overview": "Every screen is one page of a ruled school exercise copy (khata): white paper, pale blue rules, one red margin line down the left. The student writes the question on a line in ballpoint blue; the answer comes back as worked steps in dark lead, and the teacher's red pen adds only its marks: a tick in the margin and the page the answer came from. The same page serves the home tutor, a coaching centre's tutor, the join screens, the owner's dashboard, and the 404, error and loading states.\n\nThe paper is the only surface. Nothing floats above it, nothing is boxed off from it, and the page background is never covered by a panel. Structure comes from the lines themselves: all text has a line-height of one rule (2rem) and all vertical gaps are whole rules, so words rest on the blue lines the whole way down. Density is that of handwriting on ruled paper: one idea per line, generous but never airy.\n\nThe system has one light theme. It is built for a parent and a young child on a phone, in Bangla first, so type is large, contrast is high, and controls are plain words in pen.",
+    "keyCharacteristics": [
+      "One surface: ruled paper drawn on the page background, with the red margin line.",
+      "A 2rem line grid that every text line and every vertical gap obeys.",
+      "Three writing hands: ballpoint blue (student and actions), lead (the worked answer), teacher's red (marks only).",
+      "Hand-ruled boxes and underlines instead of cards, panels and pills.",
+      "A printed textbook face for headings, a plain face for everything written on the lines."
+    ],
+    "rules": [
+      {
+        "name": "The Three Hands Rule",
+        "body": "Blue is the student and anything tappable, lead is the worked answer, red is the teacher. A color is chosen by who is writing, never by emphasis.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Pen Rule",
+        "body": "`red-ink` only marks: tick, source reference, error, a count that needs attention. It is never a button, a link, a heading or a decoration. The margin line has its own red (`margin`) and the two are not interchangeable.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Line Rule",
+        "body": "Every text style has a line-height that is a whole number of rules. Size changes; the line does not. There are two sizes of running text (1.0625rem and 0.9375rem) and nothing smaller.",
+        "section": "typography"
+      },
+      {
+        "name": "The Printed Heading Rule",
+        "body": "Tiro Bangla is for page and section headings only, always weight 400. Emphasis inside text is Hind Siliguri weight, not the heading face.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Sheet Rule",
+        "body": "If an element needs a background to separate it from the page, it is the wrong element. Use a ruled box, an underline or a blank line.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do keep every line-height and every vertical gap a whole number of 2rem rules, so text rests on the lines to the bottom of the page.",
+      "Do start all content at the margin line (gutter + 0.875rem) and leave the gutter empty except for the teacher's tick.",
+      "Do choose color by the hand that writes: `ink` for the student and actions, `lead` for the worked answer, `red-ink` for the teacher's marks.",
+      "Do use a ruled box (1.5px `ink`, 2px radius) for an action and a 1.5px line for a field.",
+      "Do show name-and-value pairs as contents rows with a dotted leader.",
+      "Do use one filled button per form or view; everything else is outlined or a tap-link.",
+      "Do set headings in Tiro Bangla 400 and everything else in Hind Siliguri, at 0.9375rem or larger.",
+      "Do honor reduced motion: the written-answer reveal, the tick and the caret are all disabled under it."
+    ],
+    "donts": [
+      "Don't put a card, panel or filled container over the page. The ruled paper stays visible behind all content.",
+      "Don't add shadows, blur, glass or visible color gradients. Gradients are only the hard-stopped lines of the paper and fields.",
+      "Don't use `red-ink` for buttons, links, headings or decoration, and don't use `margin` red for text.",
+      "Don't add borders, dividers, padding or odd line-heights inside flowing content; they push every later line off the rules.",
+      "Don't round anything beyond 2px or use pill and circle shapes.",
+      "Don't add a dark theme; the system is one light sheet.",
+      "Don't center body content or float it away from the margin line.",
+      "Don't animate anything other than the answer being written, the tick, the caret, and button color and press."
+    ]
+  }
+}
