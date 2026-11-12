@@ -32,6 +32,8 @@ test("only classes with indexed textbooks can be picked", async ({ page }) => {
 
 test("a subject in the contents list starts the question and focuses the box", async ({ page }) => {
   await page.goto("/");
+  // The chat box mounts after the page; the subject row focuses it by id.
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeVisible();
   await page.getByRole("button", { name: /^গণিত/ }).click();
   await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeFocused();
   await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toHaveValue("আমি গণিত এর সাহায্য চাই।");
