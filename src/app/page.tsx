@@ -61,7 +61,8 @@ function Landing() {
             }}
             className="w-32"
             classNames={{
-              trigger: "h-8 min-h-8 border-b-[1.5px] border-ink px-0 shadow-none after:hidden",
+              // before: a 44px touch area around the one-line trigger.
+              trigger: "relative h-8 min-h-8 border-b-[1.5px] border-ink px-0 shadow-none after:hidden before:absolute before:inset-x-0 before:-inset-y-1.5 before:content-['']",
               value: "text-base font-semibold !text-ink",
               selectorIcon: "text-ink",
               popoverContent: "rounded-xs border-[1.5px] border-ink bg-paper p-0",

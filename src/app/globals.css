@@ -20,8 +20,8 @@
   --red-ink: #c21f30; /* teacher's marks only: ticks, references, errors */
   --highlight: #fff2a8;
   --line: 2rem;
-  --gutter: 1.25rem; /* where the red margin line runs */
-  --tick: 0.875rem; /* the teacher's tick, drawn in the margin */
+  --gutter: 2rem; /* where the red margin line runs */
+  --tick: 1.25rem; /* the teacher's tick, drawn in the margin */
   --rule-offset: 1.56rem; /* drops the rule under the text baseline */
 }
 
