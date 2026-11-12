@@ -155,7 +155,7 @@ White (`#ffffff`) appears once, as the label on a filled button.
 **Character:** Tiro Bangla is the printed voice of a Bangla textbook, used only for headings. Hind Siliguri is the plain hand for everything written on the lines. Both carry Bengali and Latin, so mixed-language lines stay in one face.
 
 ### Hierarchy
-- **Display** (400, `clamp(2rem, 6.2vw, 3.25rem)`, line-height 4rem = two rules, -0.01em, `ink-deep`): the home page heading only. Below 48rem its line-height is 3rem.
+- **Display** (400, `clamp(2rem, 6.2vw, 3.25rem)`, line-height 4rem = two rules, -0.01em, `ink-deep`): the home page heading only.
 - **Headline** (400, 1.5rem, line-height 2rem, `ink-deep`): section headings, the brand line in the page header, and the page heading on centre, join, dashboard, 404 and error pages.
 - **Body** (400, 1.0625rem, line-height 2rem, `lead`): answers and running text. Supporting paragraphs are capped at 60ch. Headings inside a Markdown answer stay at body size in weight 700, `ink-deep`.
 - **Action** (600, 1.0625rem): button labels. Tap-links use body at weight 500.

@@ -108,6 +108,9 @@ describe("citedSource", () => {
     test("names the retrieved page the answer cites, in English or Bangla digits", () => {
         expect(citedSource("The answer is 7 (page 12).", matches)).toBe("Class 1 Math, page 12");
         expect(citedSource("উত্তর: ৭ (গণিত বই, পৃষ্ঠা ১২)", matches)).toBe("Class 1 Math, page 12");
+        expect(citedSource("উত্তর: ৭ (গণিত বই, পৃষ্ঠা ১২)", matches, "bengali")).toBe("শ্রেণি ১ গণিত, পৃষ্ঠা ১২");
+        // A file name the Bangla label does not know is shown as it is.
+        expect(citedSource("পৃষ্ঠা ৩", [{ source: "Notes.pdf, page 3" }], "bengali")).toBe("Notes, page 3");
     });
     test("is null when the answer cites nothing, or a page the search did not return", () => {
         expect(citedSource("The answer is 7.", matches)).toBeNull();
