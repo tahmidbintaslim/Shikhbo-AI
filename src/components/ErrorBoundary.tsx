@@ -30,10 +30,10 @@ export class ErrorBoundary extends React.Component<
   render() {
     if (this.state.hasError) {
       return (
-        <main className="khata-page max-w-xl pt-16">
+        <main className="shell shell-narrow py-24">
           <h1>কিছু একটা ভুল হয়েছে।</h1>
-          <p className="text-pencil">Something went wrong. Please refresh the page.</p>
-          <button type="button" className="khata-btn khata-btn-fill khata-btn-tall mt-8" onClick={() => window.location.reload()}>
+          <p className="muted mt-4">Something went wrong. Please refresh the page.</p>
+          <button type="button" className="btn btn-primary mt-8" onClick={() => window.location.reload()}>
             পাতাটি আবার খোলো
           </button>
         </main>

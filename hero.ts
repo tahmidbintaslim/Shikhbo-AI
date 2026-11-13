@@ -1,26 +1,26 @@
 import { heroui } from "@heroui/theme";
 
 // HeroUI is used only for the class picker. Its colours and corners follow
-// the exercise-copy palette in src/app/globals.css; the site has one theme.
+// the tokens in src/app/globals.css; the site has one (light) theme.
 export default heroui({
   themes: {
     light: {
       layout: {
-        radius: { small: "2px", medium: "2px", large: "2px" },
-        borderWidth: { small: "1px", medium: "1.5px", large: "2px" },
+        radius: { small: "8px", medium: "10px", large: "14px" },
+        borderWidth: { small: "1px", medium: "1px", large: "2px" },
       },
       colors: {
-        background: "#FDFEFF",
-        foreground: "#1C2333",
-        primary: { DEFAULT: "#1D3A9E", foreground: "#ffffff" },
-        danger: { DEFAULT: "#C21F30", foreground: "#ffffff" },
+        background: "#ffffff",
+        foreground: "#0f172a",
+        primary: { DEFAULT: "#007a7a", foreground: "#ffffff" },
+        danger: { DEFAULT: "#b42318", foreground: "#ffffff" },
         default: {
-          100: "#E7F0FA",
-          200: "#C3DAF2",
-          DEFAULT: "#C3DAF2",
-          foreground: "#1C2333",
+          100: "#f1f5f9",
+          200: "#e0f7f5",
+          DEFAULT: "#d5dbe3",
+          foreground: "#0f172a",
         },
-        focus: "#132769",
+        focus: "#007a7a",
       },
     },
   },
