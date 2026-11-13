@@ -1,21 +1,20 @@
-import { Hind_Siliguri, Tiro_Bangla } from "next/font/google";
+import { DM_Sans, Hind_Siliguri } from "next/font/google";
 import React from "react";
 import "./globals.css";
 import { Providers } from "./provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-// Tiro Bangla is the printed voice of a Bangla textbook; Hind Siliguri is the
-// handwriting-plain workhorse for everything written on the lines.
-const tiro = Tiro_Bangla({
-  weight: "400",
-  subsets: ["bengali", "latin"],
-  variable: "--font-tiro",
+// DM Sans sets Latin letters and digits; Hind Siliguri sets Bangla. The
+// centre pages swap DM Sans for Instrument Sans (src/app/c/[slug]/layout.tsx).
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm",
   display: "swap",
 });
 
 const hindSiliguri = Hind_Siliguri({
   weight: ["400", "500", "600", "700"],
-  subsets: ["bengali", "latin"],
+  subsets: ["bengali"],
   variable: "--font-hind",
   display: "swap",
 });
@@ -102,10 +101,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="bn" className="light" suppressHydrationWarning>
-      <body
-        className={`${tiro.variable} ${hindSiliguri.variable}`}
-      >
+    <html lang="bn" className={`light ${dmSans.variable} ${hindSiliguri.variable}`} suppressHydrationWarning>
+      <body>
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>

@@ -9,7 +9,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <HeroUIProvider navigate={router.push}>
-      {/* One theme: the site is white ruled paper. */}
+      {/* One theme: the site is light only. */}
       <NextThemesProvider attribute="class" forcedTheme="light">
         {children}
       </NextThemesProvider>
