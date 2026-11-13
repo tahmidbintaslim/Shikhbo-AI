@@ -86,6 +86,24 @@ if (!CHAT_CONFIGURED) {
     console.error(`[config] no chat provider is configured: set at least one of ${CHAT_KEY_NAMES.join(", ")}`);
 }
 
+/**
+ * A cached answer is the JSON body that was sent ({ result, source? }), so a
+ * repeated question keeps its page reference. An entry written before that
+ * is the plain answer text.
+ */
+function fromCache(cached: string): { result: string; source?: string } {
+    try {
+        const body: unknown = JSON.parse(cached);
+        if (body && typeof body === "object" && typeof (body as { result?: unknown }).result === "string") {
+            const { result, source } = body as { result: string; source?: unknown };
+            return typeof source === "string" ? { result, source } : { result };
+        }
+    } catch {
+        // Plain text from before the cache held JSON.
+    }
+    return { result: cached };
+}
+
 /** Error bodies carry a stable `code` so the UI can show its own wording. */
 function errorResponse(status: number, code: string, error: string, headers: HeadersInit = {}) {
     return NextResponse.json({ error, code }, { status, headers });
@@ -253,7 +271,7 @@ export async function POST(req: Request) {
         const cacheKey = getCacheKey(question, grade, language);
         const cachedResponse = await getCachedResponse(cacheKey);
         if (cachedResponse) {
-            return NextResponse.json({ result: cachedResponse });
+            return NextResponse.json(fromCache(cachedResponse));
         }
 
         // ---------------------------------------------------------
@@ -276,11 +294,10 @@ export async function POST(req: Request) {
             );
         }
 
-        await setCachedResponse(cacheKey, result);
-        // shortcut: a cached answer is returned without its source; cache the
-        // source with the text if students miss the reference on repeats.
-        const source = citedSource(result, matches);
-        return NextResponse.json({ result, ...(source ? { source } : {}) });
+        const source = citedSource(result, matches, language);
+        const answer = { result, ...(source ? { source } : {}) };
+        await setCachedResponse(cacheKey, JSON.stringify(answer));
+        return NextResponse.json(answer);
     } catch (error) {
         console.error(`[teach] request failed: ${errorSummary(error)}`);
         return errorResponse(500, "internal_error", "Failed to process request");

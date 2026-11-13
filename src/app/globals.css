@@ -91,15 +91,11 @@
   }
 
   h1 {
+    /* Always two whole lines per row of heading, so a heading of any
+       length leaves the page on the rules. */
     font-size: clamp(2rem, 6.2vw, 3.25rem);
     line-height: calc(var(--line) * 2);
     letter-spacing: -0.01em;
-  }
-
-  @media (max-width: 48rem) {
-    h1 {
-      line-height: calc(var(--line) * 1.5);
-    }
   }
 
   h2 {

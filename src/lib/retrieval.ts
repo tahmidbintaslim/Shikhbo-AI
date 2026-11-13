@@ -34,18 +34,36 @@ export function formatContext(matches: Array<Partial<TextbookMatch>>): string {
     .join("\n\n");
 }
 
+const BANGLA_SUBJECTS: Record<string, string> = { math: "গণিত", bangla: "বাংলা", english: "ইংরেজি" };
+
+/** "Class 1 Math, page 12" -> "শ্রেণি ১ গণিত, পৃষ্ঠা ১২". Unknown shapes are returned as they are. */
+function banglaLabel(label: string): string {
+  const m = /^class\s*(\d+)\s+(\w+).*?,\s*page\s*(\d+)$/i.exec(label);
+  const subject = m && BANGLA_SUBJECTS[m[2]!.toLowerCase()];
+  if (!m || !subject) return label;
+  const bn = (n: string) => n.replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)]!);
+  return `শ্রেণি ${bn(m[1]!)} ${subject}, পৃষ্ঠা ${bn(m[3]!)}`;
+}
+
 /**
  * The retrieved page the answer itself cites ("page 12", "পৃষ্ঠা ১২"), as a
  * label for the student, or null. Only a page the model named and the
  * search really returned is shown as the source: the top match alone proves
  * nothing about what the answer used.
  */
-export function citedSource(answer: string, matches: Array<Partial<TextbookMatch>>): string | null {
+export function citedSource(
+  answer: string,
+  matches: Array<Partial<TextbookMatch>>,
+  language: Language = "english",
+): string | null {
   const latin = answer.replace(/[০-৯]/g, (d) => String("০১২৩৪৫৬৭৮৯".indexOf(d)));
   const cited = new Set(Array.from(latin.matchAll(/(?:page|পৃষ্ঠা(?:র|য়)?)\s*(\d{1,4})/gi), (m) => m[1]));
   for (const match of matches) {
     const page = typeof match.source === "string" ? /page (\d+)/i.exec(match.source)?.[1] : undefined;
-    if (page && cited.has(page)) return sourceLabel(match.source as string);
+    if (page && cited.has(page)) {
+      const label = sourceLabel(match.source as string);
+      return language === "bengali" ? banglaLabel(label) : label;
+    }
   }
   return null;
 }
