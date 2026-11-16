@@ -112,6 +112,8 @@ Set these in `.env.local` for local work, or in your host's settings. `.env.exam
 | `OPENROUTER_MODEL` | Optional | Default `google/gemma-4-31b-it:free` |
 | `HF_CHAT_MODEL` | Optional | Default `google/gemma-4-26B-A4B-it` |
 | `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |
+| `AI_GATEWAY_API_KEY` | Chat, last resort | Vercel AI Gateway, billed per token. Not needed on Vercel: a deployment there signs in with its own token, so the tutor answers with no chat key set |
+| `GATEWAY_MODEL` | Optional | Default `google/gemini-2.5-flash` |
 | `SHIKHBO_STORE_URL` | Textbook retrieval, answer cache, shared rate limit | The `shikhbo-api` Edge Function URL, `https://<project>.supabase.co/functions/v1/shikhbo-api`. Anything but a plain `https://` URL turns the store off |
 | `SHIKHBO_STORE_SECRET` | Same | A random secret whose SHA-256 is stored in `shikhbo.app_secret` |
 | `NEXT_PUBLIC_APP_URL` | Optional | Base URL for `sitemap.xml` and `robots.txt` |

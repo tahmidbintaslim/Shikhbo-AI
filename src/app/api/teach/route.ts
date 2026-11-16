@@ -81,7 +81,7 @@ const groq = groqKey
     ? createOptional("Groq", "GROQ_API_KEY", () => createGroq({ apiKey: groqKey }))
     : null;
 
-const CHAT_CONFIGURED = Boolean(openrouter || hf || groq);
+const CHAT_CONFIGURED = Boolean(openrouter || hf || groq || config.gateway);
 if (!CHAT_CONFIGURED) {
     console.error(`[config] no chat provider is configured: set at least one of ${CHAT_KEY_NAMES.join(", ")}`);
 }
@@ -141,6 +141,14 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
                 });
                 return response.choices[0]?.message?.content;
             },
+        });
+    }
+    if (config.gateway) {
+        // A plain "creator/model" string is routed through Vercel AI Gateway.
+        // Last, because it is the only provider billed per token.
+        providers.push({
+            name: "gateway",
+            run: async () => (await generateText({ model: models.gateway, system, messages })).text,
         });
     }
     for (const provider of providers) {
