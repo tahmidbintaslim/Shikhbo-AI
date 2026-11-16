@@ -10,11 +10,9 @@ A homework tutor for students in Bangladesh that explains answers step by step, 
 
 **Direction.** Shikhbo AI is narrowing to homework help for Classes 1 to 5, paid for by parents: a photo of tonight's homework, a hint before the answer, and a weekly view of what the child found hard. None of that is built yet. This repository also holds the engine and the first pilot of Bongo AI, a tutor for coaching centres; see [Coaching-centre pilot](#coaching-centre-pilot-bongo-ai).
 
-| Dark theme (default) | Light theme |
-| --- | --- |
-| ![Shikhbo AI home page in the dark theme: class picker and one language switch (it also picks the textbook) in the header, a Bangla hero card, subject cards and the chat panel](docs/images/home-dark.png) | ![The same home page in the light theme](docs/images/home-light.png) |
+![Shikhbo AI home page: a floating navigation bar with the language switch, a Bangla headline, and the working chat box with the class picker inside a laptop frame](docs/images/home.png)
 
-Screenshots from a local production build (`npm run build && npm start`), 1280 x 800.
+Screenshot from a local production build (`npm run build && npm start`), 1280 x 800. The home page (Shikhbo AI) is a mint-and-white landing page with the working chat in the hero; the coaching-centre pages (Bongo AI) use their own off-white, blue-button look. One light theme; [DESIGN.md](DESIGN.md) describes both.
 
 ## Features
 

@@ -8,12 +8,12 @@ import rehypeHighlight from "rehype-highlight";
 import { useChatContext } from "@/components/ChatProvider";
 import { MAX_USER_CHARS } from "@/lib/teach-limits";
 
-// The chat is the page of the exercise copy: the student's question is
-// written in pen, the worked answer follows, and the teacher's red tick
-// closes it. Labels follow the UI language picked in the header.
+// The student's question is a bubble on the right; the worked answer follows
+// on the left with the source it came from. Labels follow the UI language
+// picked in the header.
 const LABELS = {
   en: {
-    clear: "New page",
+    clear: "Start over",
     clearLabel: "Clear conversation",
     export: "Save",
     exportLabel: "Export conversation",
@@ -29,7 +29,7 @@ const LABELS = {
     sending: "Sending...",
   },
   bn: {
-    clear: "নতুন পাতা",
+    clear: "নতুন করে শুরু",
     clearLabel: "কথোপকথন মুছে ফেলো",
     export: "সেভ করো",
     exportLabel: "কথোপকথন এক্সপোর্ট করো",
@@ -53,11 +53,11 @@ const STARTERS = {
   english: ["What is 3 + 4?", "How do I say hello in English?", "Count from 1 to 10 with me"],
 } as const;
 
-/** The teacher's tick, drawn after a new answer is written. */
+/** Marks the source line under an answer. */
 function Tick() {
   return (
-    <svg className="khata-tick" viewBox="0 0 28 22" fill="none" aria-hidden="true">
-      <path d="M3 12.5 10 19 25 3" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M3 8.5 6.5 12 13 4.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
@@ -84,7 +84,7 @@ export default function ChatInterface() {
   const count = useRef(messages.length);
   useEffect(() => {
     if (messages.length > count.current || loading) {
-      // Keep the line you write on in view as the page fills up.
+      // Keep the question box in view as the answers grow.
       formRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
     count.current = messages.length;
@@ -100,14 +100,14 @@ export default function ChatInterface() {
       <div ref={scrollRef} id="chat-messages" aria-live="polite">
         {messages.length === 0 ? (
           <div>
-            <p className="text-pencil">{centreName ? t.emptyCentre(centreName) : t.empty}</p>
-            <ul>
+            <p className="muted">{centreName ? t.emptyCentre(centreName) : t.empty}</p>
+            <ul className="mt-3 flex flex-wrap gap-2">
               {/* The starters are about the Class 1 textbooks, not a centre's notes. */}
               {(centreName ? [] : STARTERS[language]).map((q) => (
                 <li key={q}>
                   <button
                     type="button"
-                    className="khata-link"
+                    className="starter"
                     onClick={() => {
                       setInput(q);
                       document.getElementById("chat-input")?.focus();
@@ -122,24 +122,24 @@ export default function ChatInterface() {
         ) : (
           <>
             <div className="flex justify-end gap-5">
-              <button type="button" className="khata-link khata-small" onClick={clearMessages} aria-label={t.clearLabel}>
+              <button type="button" className="link small" onClick={clearMessages} aria-label={t.clearLabel}>
                 {t.clear}
               </button>
-              <button type="button" className="khata-link khata-small" onClick={exportConversation} aria-label={t.exportLabel}>
+              <button type="button" className="link small" onClick={exportConversation} aria-label={t.exportLabel}>
                 {t.export}
               </button>
             </div>
-            <ol>
+            <ol className="space-y-4">
               {messages.map((m) =>
                 m.role === "user" ? (
-                  <li key={m.id} className="mt-8 text-ink first:mt-0">
-                    <span className="font-bold">{t.question}: </span>
+                  <li key={m.id} className="bubble w-fit">
+                    <span className="sr-only">{t.question}: </span>
                     <span className="whitespace-pre-wrap">{m.content}</span>
                   </li>
                 ) : (
-                  <li key={m.id} className="relative">
+                  <li key={m.id} className={seen.has(m.id) ? "" : "rise"}>
                     <span className="sr-only">{t.answer}:</span>
-                    <div className={`khata-prose ${seen.has(m.id) ? "" : "khata-write"}`}>
+                    <div className="prose-answer">
                       <ReactMarkdown
                         remarkPlugins={[remarkGfm, remarkMath]}
                         rehypePlugins={[rehypeKatex, rehypeHighlight]}
@@ -147,21 +147,25 @@ export default function ChatInterface() {
                         {m.content}
                       </ReactMarkdown>
                     </div>
-                    {m.source && <p className="khata-source">{m.source}</p>}
-                    <Tick />
+                    {m.source && (
+                      <p className="source">
+                        <Tick />
+                        {m.source}
+                      </p>
+                    )}
                   </li>
                 ),
               )}
               {loading && (
-                <li className="text-pencil">
-                  <span className="khata-writing">{t.writing}</span>
+                <li className="muted">
+                  <span className="dots">{t.writing}</span>
                 </li>
               )}
             </ol>
           </>
         )}
       </div>
-      <form ref={formRef} onSubmit={handleSubmit} className="mt-8 flex scroll-mb-8 items-end gap-3">
+      <form ref={formRef} onSubmit={handleSubmit} className="mt-5 flex scroll-mb-8 items-end gap-2">
         <textarea
           id="chat-input"
           aria-label={t.inputLabel}
@@ -170,9 +174,9 @@ export default function ChatInterface() {
           placeholder={t.placeholder}
           maxLength={MAX_USER_CHARS}
           rows={1}
-          className="khata-field max-h-40 flex-1"
+          className="field max-h-40 flex-1"
         />
-        <button type="submit" className="khata-btn khata-btn-fill khata-btn-tall" disabled={loading} aria-label={t.sendLabel}>
+        <button type="submit" className="btn btn-primary" disabled={loading} aria-label={t.sendLabel}>
           {loading ? t.sending : t.send}
         </button>
       </form>

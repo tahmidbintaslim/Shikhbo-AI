@@ -5,415 +5,585 @@
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
 /*
- * The whole site is one page of a ruled school exercise copy (khata).
- * Everything sits on a 2rem line: text line-heights and vertical spacing are
- * whole lines (Tailwind's 8 = one line), so words rest on the blue rules.
+ * Two looks share one set of token names and component classes.
+ *  - Shikhbo AI (the default): mint-to-white page, navy text, teal accent,
+ *    navy pill buttons, soft shadows.
+ *  - Bongo AI (.bongo, set by src/app/c/[slug]/layout.tsx): off-white page,
+ *    near-black text, hairlines, blue pill buttons, pastel cards.
+ * DESIGN.md describes both.
  */
 :root {
-  --paper: #fdfeff;
-  --rule: #c3daf2;
-  --margin: #e0563f;
-  --ink: #1d3a9e; /* ballpoint blue: what the student writes, and actions */
-  --ink-deep: #132769;
-  --lead: #1c2333; /* the worked answer */
-  --pencil: #4a5670; /* secondary text */
-  --red-ink: #c21f30; /* teacher's marks only: ticks, references, errors */
-  --highlight: #fff2a8;
-  --line: 2rem;
-  --gutter: 2rem; /* where the red margin line runs */
-  --tick: 1.25rem; /* the teacher's tick, drawn in the margin */
-  --rule-offset: 1.56rem; /* drops the rule under the text baseline */
+  --bg: #ffffff;
+  --bg-tint: #e8fcf7;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --line: #d5dbe3;
+  --accent: #00b1b1; /* decoration only: too light for text on white */
+  --accent-strong: #007a7a; /* teal that passes 4.5:1 on white */
+  --accent-soft: #e0f7f5;
+  --primary: #0f172a;
+  --primary-hover: #1e293b;
+  --primary-fg: #ffffff;
+  --danger: #b42318;
+  --shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 12px 32px -12px rgb(15 23 42 / 0.18);
+  --radius: 1rem;
+  --font-latin: var(--font-dm);
 }
 
-@media (min-width: 48rem) {
-  :root {
-    /* A wider margin on wide screens, so the writing still starts at the line. */
-    --gutter: clamp(4rem, 12vw, 11rem);
-    --tick: 1.5rem;
-  }
+.bongo {
+  --bg: #f6f6f4;
+  --bg-tint: #f6f6f4;
+  --text: #171717;
+  --muted: #5c5c5c;
+  --line: rgb(23 23 23 / 0.14);
+  --accent: #3d5afe;
+  --accent-strong: #3d5afe;
+  --accent-soft: #e6eaff;
+  --primary: #3d5afe;
+  --primary-hover: #2f48d8;
+  --shadow: 0 1px 2px rgb(23 23 23 / 0.04);
+  --font-latin: var(--font-instrument);
+  /* Pastel card fills. */
+  --pastel-yellow: #ffee99;
+  --pastel-blue: #b8ddfa;
+  --pastel-peach: #ffc4a3;
+  --pastel-lilac: #d9d2ff;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  /* Re-resolved here: an inherited font-family keeps the root's Latin face. */
+  font-family: var(--font-latin), var(--font-hind), system-ui, sans-serif;
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-rule: var(--rule);
-  --color-margin: var(--margin);
-  --color-ink: var(--ink);
-  --color-ink-deep: var(--ink-deep);
-  --color-lead: var(--lead);
-  --color-pencil: var(--pencil);
-  --color-red-ink: var(--red-ink);
-  --color-highlight: var(--highlight);
-  --font-heading: var(--font-tiro), "Tiro Bangla", serif;
-  --font-sans: var(--font-hind), "Hind Siliguri", system-ui, sans-serif;
+  --color-bg: var(--bg);
+  --color-bg-tint: var(--bg-tint);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-primary: var(--primary);
+  --color-danger: var(--danger);
+  /* Latin face first, so Latin letters and digits use it; Bangla falls
+     through to Hind Siliguri. */
+  --font-sans: var(--font-latin), var(--font-hind), system-ui, sans-serif;
 }
 
 @layer base {
   html {
     color-scheme: light;
-    scrollbar-color: var(--rule) var(--paper);
-    scrollbar-width: thin;
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
   }
 
   body {
     @apply antialiased min-h-screen font-sans;
-    color: var(--lead);
-    font-size: 1.0625rem;
-    line-height: var(--line);
-    caret-color: var(--ink);
-    background-color: var(--paper);
-    background-image:
-      linear-gradient(
-        90deg,
-        transparent calc(var(--gutter) - 1px),
-        var(--margin) calc(var(--gutter) - 1px),
-        var(--margin) calc(var(--gutter) + 1px),
-        transparent calc(var(--gutter) + 1px)
-      ),
-      linear-gradient(to bottom, transparent calc(var(--line) - 1px), var(--rule) calc(var(--line) - 1px));
-    background-size:
-      100% 100%,
-      100% var(--line);
-    background-position:
-      0 0,
-      0 var(--rule-offset);
+    color: var(--text);
+    background: var(--bg);
+    font-size: 1rem;
+    line-height: 1.65; /* Bangla matras need the room */
+    overflow-x: clip;
   }
 
   ::selection {
-    background: var(--highlight);
-    color: var(--ink-deep);
+    background: var(--accent-soft);
   }
 
   h1,
-  h2 {
-    @apply font-heading;
-    color: var(--ink-deep);
+  h2,
+  h3 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
     text-wrap: balance;
   }
 
   h1 {
-    /* Always two whole lines per row of heading, so a heading of any
-       length leaves the page on the rules. */
-    font-size: clamp(2rem, 6.2vw, 3.25rem);
-    line-height: calc(var(--line) * 2);
-    letter-spacing: -0.01em;
+    font-size: clamp(2.25rem, 5.2vw, 3.625rem);
+    line-height: 1.2;
   }
 
   h2 {
-    font-size: 1.5rem;
-    line-height: var(--line);
+    font-size: clamp(1.625rem, 3.4vw, 2.25rem);
+    line-height: 1.25;
   }
 
-  a {
-    color: var(--ink);
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
+  h3 {
+    font-size: 1.125rem;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
   }
 
   :focus-visible {
-    outline: 2px solid var(--ink-deep);
+    outline: 2px solid var(--accent-strong);
     outline-offset: 2px;
   }
 }
 
 @layer components {
-  /* The writing area: clear of the red margin line on the left. */
-  .khata-page {
-    max-width: calc(72rem + var(--gutter));
-    padding-left: calc(var(--gutter) + 0.875rem);
-    padding-right: 1rem;
+  /* Page column. 16px gutters on phones. */
+  .shell {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 48rem) {
+    .shell {
+      padding-inline: 2rem;
+    }
+  }
+  .bongo .shell {
+    max-width: 71rem;
+  }
+  .shell.shell-narrow {
+    max-width: 44rem;
   }
 
-  .khata-small {
-    font-size: 0.9375rem;
-    color: var(--pencil);
+  .muted {
+    color: var(--muted);
+  }
+  .small {
+    font-size: 0.875rem;
+    color: var(--muted);
   }
 
-  /* A hand-ruled box: actions. One line tall, so it does not break the rules. */
-  .khata-btn {
+  /* The Shikhbo home page: mint glow fading to white. */
+  .mint {
+    background:
+      radial-gradient(60rem 32rem at 70% 12rem, rgb(0 177 177 / 0.14), transparent 70%),
+      linear-gradient(to bottom, var(--bg-tint), #f3fdfb 40rem, var(--bg) 80rem);
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #009494, #0f3d4a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Buttons: 44px tall pills. */
+  .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 0.5rem;
-    min-height: var(--line);
-    padding: 0 0.875rem;
-    border: 1.5px solid var(--ink);
-    border-radius: 2px;
-    background: var(--paper);
-    color: var(--ink);
+    min-height: 2.75rem;
+    padding: 0.5rem 1.125rem;
+    border: 1px solid transparent;
+    border-radius: 0.625rem;
     font-weight: 600;
-    line-height: 1.25;
+    line-height: 1.3;
+    text-decoration: none;
     cursor: pointer;
     transition:
       background-color 160ms ease-out,
-      color 160ms ease-out,
+      border-color 160ms ease-out,
       transform 80ms ease-out;
   }
-  /* 44px touch target without leaving the line grid. */
-  .khata-btn::after,
-  .khata-link::after {
-    content: "";
-    position: absolute;
-    inset: -6px 0;
+  .bongo .btn {
+    border-radius: 999px;
+    padding-inline: 1.5rem;
   }
-  .khata-btn,
-  .khata-link {
-    position: relative;
-  }
-  .khata-btn:hover {
-    background: color-mix(in oklab, var(--ink) 9%, var(--paper));
-  }
-  .khata-btn:active {
+  .btn:active {
     transform: translateY(1px);
   }
-  .khata-btn:disabled {
+  .btn:disabled {
     cursor: not-allowed;
-    border-color: var(--pencil);
-    color: var(--pencil);
-    background: var(--paper);
+    opacity: 0.6;
   }
-  .khata-btn-fill {
-    background: var(--ink);
+  .btn-primary {
+    background: var(--primary);
+    color: var(--primary-fg);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+  .btn-black {
+    background: #000;
     color: #fff;
   }
-  .khata-btn-fill:hover {
-    background: var(--ink-deep);
+  .btn-black:hover {
+    background: #1e293b;
   }
-  .khata-btn-fill:disabled {
-    background: var(--pencil);
-    color: #fff;
+  .btn-outline {
+    background: var(--surface);
+    border-color: var(--accent-strong);
+    color: var(--accent-strong);
   }
-  /* 44px touch target on the main action without leaving the line grid. */
-  .khata-btn-tall {
-    min-height: calc(var(--line) * 1.5);
-    margin-block: calc(var(--line) * 0.25);
+  .bongo .btn-outline {
+    border-color: var(--line);
+    color: var(--text);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--accent-soft);
+  }
+  .btn-lg {
+    min-height: 3.5rem;
+    padding-inline: 1.5rem;
+    border-radius: 1rem;
+    font-size: 1.0625rem;
+  }
+  .bongo .btn-lg {
+    border-radius: 999px;
+    padding-inline: 1.75rem;
   }
 
-  /* Text you tap, written in pen: starters, index rows, small tools. */
-  .khata-link {
-    color: var(--ink);
-    font-weight: 500;
+  /* Text you tap. The padding keeps a 44px target. */
+  .link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;
+    color: var(--text);
+    font-weight: 600;
     text-align: start;
-    text-decoration: underline dotted;
-    text-decoration-thickness: 1.5px;
-    text-underline-offset: 0.3em;
     cursor: pointer;
   }
-  .khata-link:hover {
-    color: var(--ink-deep);
-    text-decoration-style: solid;
+  .link:hover:not(:disabled) {
+    color: var(--accent-strong);
   }
-  .khata-link:disabled {
-    color: var(--pencil);
-    text-decoration: none;
+  .link:disabled {
+    color: var(--muted);
     cursor: not-allowed;
   }
 
-  /* A field is the line you write on: its ink line is drawn exactly over
-     the page's blue rule, one per line of text. */
-  .khata-field {
-    --field-ink: var(--ink);
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid rgb(0 177 177 / 0.45);
+    border-radius: 999px;
+    background: rgb(0 177 177 / 0.1);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .bongo .pill {
+    padding: 0.625rem 1rem;
+    border-color: var(--line);
+    background: transparent;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .hairline {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Small-caps section label, as on the Bongo reference. */
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Rows separated by hairlines: lists on the dashboard. */
+  .rows > * {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.25rem;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .rows > :first-child {
+    border-top: 1px solid var(--line);
+  }
+
+  .field {
     display: block;
     width: 100%;
-    min-height: var(--line);
-    padding: 0;
-    border: 0;
-    border-radius: 0;
-    background-color: transparent;
-    background-image: linear-gradient(
-      to bottom,
-      transparent calc(var(--line) - 1.5px),
-      var(--field-ink) calc(var(--line) - 1.5px)
-    );
-    background-size: 100% var(--line);
-    background-position: 0 var(--rule-offset);
-    background-attachment: local;
-    color: var(--ink);
+    min-height: 2.75rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    color: var(--text);
     font: inherit;
-    line-height: var(--line);
     resize: none;
     field-sizing: content;
   }
-  .khata-field::placeholder {
-    color: var(--pencil);
+  .field::placeholder {
+    color: var(--muted);
     opacity: 1;
   }
-  .khata-field:focus-visible {
-    outline: none;
-    --field-ink: var(--ink-deep);
-    background-color: color-mix(in oklab, var(--highlight) 45%, transparent);
+  .field:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 0;
+    border-color: var(--accent-strong);
   }
-  .khata-field[aria-invalid="true"] {
-    --field-ink: var(--red-ink);
+  .field[aria-invalid="true"] {
+    border-color: var(--danger);
   }
 
-  .khata-label {
+  .label {
     display: block;
-    font-size: 0.9375rem;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    color: var(--pencil);
   }
 
-  .khata-error {
-    color: var(--red-ink);
+  .error {
+    color: var(--danger);
     font-weight: 500;
   }
 
-  /* Contents-page row: name, dotted leader, value. */
-  .khata-leader {
-    display: flex;
-    align-items: baseline;
-    gap: 0.5rem;
-  }
-  .khata-leader::after {
-    content: "";
-    order: 1;
-    flex: 1;
-    min-width: 1.5rem;
-    border-bottom: 2px dotted var(--pencil);
-    transform: translateY(-0.3em);
-  }
-  .khata-leader > :last-child {
-    order: 2;
-  }
-
-  /* A worked answer in Markdown, kept on the lines. */
-  .khata-prose {
+  /* Chat. */
+  .bubble {
+    max-width: 85%;
+    margin-left: auto;
+    padding: 0.625rem 1rem;
+    border-radius: 1rem 1rem 0.25rem 1rem;
+    background: var(--primary);
+    color: var(--primary-fg);
     overflow-wrap: anywhere;
   }
-  .khata-prose :is(h1, h2, h3, h4) {
-    font-family: inherit;
-    font-size: inherit;
-    font-weight: 700;
-    line-height: var(--line);
-    letter-spacing: 0;
-    color: var(--ink-deep);
+  .starter {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: start;
+    cursor: pointer;
   }
-  .khata-prose :is(ul, ol) {
+  .starter:hover {
+    border-color: var(--accent-strong);
+    background: var(--accent-soft);
+  }
+
+  /* Where the answer came from: always shown when the API sends a source. */
+  .source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .source svg {
+    width: 0.875rem;
+    flex: none;
+  }
+
+  /* A worked answer in Markdown. */
+  .prose-answer {
+    overflow-wrap: anywhere;
+  }
+  .prose-answer > * + * {
+    margin-top: 0.625rem;
+  }
+  .prose-answer :is(h1, h2, h3, h4) {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+  .prose-answer :is(ul, ol) {
     padding-left: 1.5rem;
   }
-  .khata-prose ul {
+  .prose-answer ul {
     list-style: disc;
   }
-  .khata-prose ol {
+  .prose-answer ol {
     list-style: decimal;
   }
-  .khata-prose strong {
-    color: var(--ink-deep);
+  .prose-answer li + li {
+    margin-top: 0.25rem;
   }
-  .khata-prose code {
+  .prose-answer a {
+    color: var(--accent-strong);
+    text-decoration: underline;
+  }
+  .prose-answer code {
     font-size: 0.9em;
-    background: color-mix(in oklab, var(--rule) 45%, transparent);
-    padding: 0 0.25em;
+    padding: 0.1em 0.3em;
+    border-radius: 0.25rem;
+    background: var(--accent-soft);
   }
-  /* No borders or odd line-heights here: they would push every later
-     line off the rules. */
-  .khata-prose pre {
+  .prose-answer pre {
     overflow-x: auto;
-    padding: 0 0.75rem;
-    background: color-mix(in oklab, var(--rule) 30%, transparent);
-    line-height: var(--line);
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: #0f172a;
+    color: #e2e8f0;
   }
-  .khata-prose pre code {
-    background: none;
+  .prose-answer pre code {
     padding: 0;
+    background: none;
   }
-  .khata-prose table {
+  .prose-answer table {
     border-collapse: collapse;
   }
-  .khata-prose :is(th, td) {
-    padding: 0 0.75rem 0 0;
+  .prose-answer :is(th, td) {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--line);
     text-align: start;
   }
-  .khata-prose th {
-    color: var(--ink-deep);
-  }
-  .khata-prose .katex-display {
-    margin-block: var(--line);
+  .prose-answer .katex-display {
     overflow-x: auto;
     overflow-y: hidden;
   }
 
-  /* The teacher's tick sits in the margin beside the answer's last line,
-     out of flow, so it never moves the lines. */
-  .khata-tick {
-    position: absolute;
-    bottom: 0.45rem;
-    left: calc(-0.875rem - var(--gutter) + (var(--gutter) - var(--tick)) / 2);
-    width: var(--tick);
-    height: auto;
-    color: var(--red-ink);
+  /* The laptop the home page's chat sits in: a dark bezel and a base. */
+  .laptop-screen {
+    padding: 0.5rem;
+    border-radius: 1.25rem;
+    background: #0f172a;
+    box-shadow: 0 30px 60px -24px rgb(15 23 42 / 0.45);
+  }
+  .laptop-screen > div {
+    border-radius: 0.875rem;
+    background: var(--surface);
+  }
+  .laptop-base {
+    height: 0.75rem;
+    margin-inline: -3%;
+    border-radius: 0 0 1rem 1rem;
+    background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
   }
 
-  /* Where the answer came from, in the teacher's red. */
-  .khata-source {
-    font-size: 0.9375rem;
+  /* Labelled chips floating round the laptop. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
     font-weight: 600;
-    color: var(--red-ink);
-    text-align: end;
+    box-shadow: 0 6px 16px -6px rgb(15 23 42 / 0.3);
+    white-space: nowrap;
+  }
+  .chip-yellow {
+    background: #fbeeb0;
+    color: #3b2f00;
+  }
+  .chip-navy {
+    background: #2e1f6b;
+    color: #fff;
+  }
+  .chip-lilac {
+    background: #ddd3fb;
+    color: #2e1f6b;
+  }
+  .chip-mint {
+    background: #c9f3e6;
+    color: #064e43;
   }
 
-  .khata-file input {
+  /* The phone on the Bongo join page. */
+  .phone {
+    width: 17rem;
+    padding: 0.5rem;
+    border-radius: 2.5rem;
+    background: #171717;
+    box-shadow: 0 24px 48px -20px rgb(23 23 23 / 0.4);
+  }
+  .phone > div {
+    min-height: 31rem;
+    border-radius: 2rem;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.5rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq summary::after {
+    content: "+";
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--muted);
+  }
+  .faq[open] summary::after {
+    content: "\2212";
+  }
+  .faq p {
+    padding: 0 1.25rem 1.25rem;
+    color: var(--muted);
+  }
+
+  .file input {
     position: absolute;
     width: 1px;
     height: 1px;
     opacity: 0;
   }
-  .khata-file:focus-within {
-    outline: 2px solid var(--ink-deep);
+  .file:focus-within {
+    outline: 2px solid var(--accent-strong);
     outline-offset: 2px;
   }
+
+  .dots::after {
+    content: "...";
+  }
 }
 
-/* The one authored moment: a new answer is written onto the page line by
-   line, and the teacher's tick comes last. */
 @media (prefers-reduced-motion: no-preference) {
-  .khata-write > * {
-    animation: khata-write 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  .rise {
+    animation: rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
   }
-  .khata-write > :nth-child(2) { animation-delay: 140ms; }
-  .khata-write > :nth-child(3) { animation-delay: 280ms; }
-  .khata-write > :nth-child(4) { animation-delay: 420ms; }
-  .khata-write > :nth-child(5) { animation-delay: 560ms; }
-  .khata-write > :nth-child(n + 6) { animation-delay: 700ms; }
-
-  .khata-write ~ .khata-source {
-    animation: khata-write 420ms cubic-bezier(0.16, 1, 0.3, 1) 820ms both;
-  }
-  .khata-write ~ .khata-tick path {
-    stroke-dasharray: 30;
-    animation: khata-tick 380ms cubic-bezier(0.16, 1, 0.3, 1) 900ms both;
-  }
-
-  .khata-writing::after {
-    content: "";
+  .dots::after {
+    animation: dots 1.2s steps(4, jump-none) infinite;
     display: inline-block;
-    width: 2px;
-    height: 1.1em;
-    margin-left: 2px;
-    vertical-align: text-bottom;
-    background: var(--ink);
-    animation: khata-caret 1s steps(2, jump-none) infinite;
+    overflow: hidden;
+    vertical-align: bottom;
+    width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
   }
 }
 
-@keyframes khata-write {
+@keyframes rise {
   from {
-    clip-path: inset(0 100% 0 0);
-  }
-  to {
-    clip-path: inset(0 0 0 0);
-  }
-}
-@keyframes khata-tick {
-  from {
-    stroke-dashoffset: 30;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes khata-caret {
-  50% {
     opacity: 0;
+    transform: translateY(6px);
   }
+}
+@keyframes dots {
+  to {
+    width: 1.2em;
+  }
+}
+
+/* In the laptop the conversation scrolls inside the screen. */
+.laptop-screen #chat-messages {
+  max-height: 26rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
