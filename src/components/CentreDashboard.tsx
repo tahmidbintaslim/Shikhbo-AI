@@ -68,7 +68,8 @@ export default function CentreDashboard({ slug, name }: { slug: string; name: st
 
   useEffect(() => {
     const saved = sessionStorage.getItem(codeKey);
-    if (saved) void load(saved);
+    // Defer the restore: load() sets busy/error state at once, which must not run in the effect body.
+    if (saved) queueMicrotask(() => void load(saved));
   }, [codeKey, load]);
 
   const saveNotes = async (noteTitle: string, noteText: string) => {
