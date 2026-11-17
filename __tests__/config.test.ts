@@ -1,7 +1,7 @@
 import { describe, expect, spyOn, test } from "bun:test";
 import { errorText } from "../src/lib/chat-errors";
 import { configStatus, createOptional, isRestUrl, readServiceConfig } from "../src/lib/config";
-import { createRateLimiter } from "../src/lib/rate-limit";
+import { allowGatewayAnswer, createRateLimiter } from "../src/lib/rate-limit";
 
 describe("service config", () => {
     test("no env vars means no chat provider and no retrieval", () => {
@@ -128,5 +128,24 @@ describe("chat error text", () => {
         expect(errorText(strings, 503, "providers_unavailable")).toBe("try later");
         expect(errorText(strings, 500, "internal_error")).toBe("generic");
         expect(errorText(strings, 502, undefined)).toBe("generic");
+    });
+
+    test("gateway budget uses one shared daily counter and fails closed", async () => {
+        const warn = spyOn(console, "warn").mockImplementation(() => {});
+        const calls: unknown[][] = [];
+        let fail = false;
+        const store = {
+            rateLimit: async (...args: unknown[]) => {
+                calls.push(args);
+                if (fail) throw new Error("HTTP 500");
+                return true;
+            },
+        } as unknown as Parameters<typeof createRateLimiter>[0];
+        expect(await allowGatewayAnswer(null)).toBe(false);
+        expect(await allowGatewayAnswer(store, 5)).toBe(true);
+        expect(calls[0]).toEqual(["gateway:daily", 5, 86_400]);
+        fail = true;
+        expect(await allowGatewayAnswer(store)).toBe(false);
+        warn.mockRestore();
     });
 });

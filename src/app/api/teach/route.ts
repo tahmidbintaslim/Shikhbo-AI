@@ -6,7 +6,7 @@ import { generateText } from "ai";
 import { NextResponse } from "next/server";
 import { CHAT_KEY_NAMES, createOptional, readServiceConfig } from "@/lib/config";
 import { getModelConfig } from "@/lib/models";
-import { createRateLimiter } from "@/lib/rate-limit";
+import { allowGatewayAnswer, createRateLimiter, GATEWAY_DAILY_LIMIT } from "@/lib/rate-limit";
 import { buildCentrePrompt, parseCentreRequest, splitCoverage } from "@/lib/centre";
 import { RETRIEVAL_TOP_K, citedSource, formatContext, retrieveContext } from "@/lib/retrieval";
 import { StoreError, createStore, type TextbookMatch } from "@/lib/store";
@@ -65,6 +65,7 @@ const models = getModelConfig();
 // A. Store (supabase/functions/shikhbo-api): textbook pages, answer cache, shared rate limit
 const store = config.store ? createStore(config.store) : null;
 const rateLimiter = createRateLimiter(store);
+const gatewayDailyLimit = Number(process.env.GATEWAY_DAILY_LIMIT) || GATEWAY_DAILY_LIMIT;
 
 // B. Hugging Face: the second chat provider
 const hfKey = config.hfKey;
@@ -148,7 +149,14 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
         // Last, because it is the only provider billed per token.
         providers.push({
             name: "gateway",
-            run: async () => (await generateText({ model: models.gateway, system, messages })).text,
+            run: async () => {
+                // Daily spending cap, checked only when the free providers have all failed.
+                if (!(await allowGatewayAnswer(store, gatewayDailyLimit))) {
+                    console.warn("[teach] gateway daily budget used up");
+                    return null;
+                }
+                return (await generateText({ model: models.gateway, system, messages })).text;
+            },
         });
     }
     for (const provider of providers) {

@@ -18,7 +18,7 @@ Screenshot from a local production build (`npm run build && npm start`), 1280 x 
 
 - Ask a question in a chat box. Pick the class (1 to 12) and the medium (Bangla or English). The page, chat box included, switches between Bangla (the default) and English.
 - Textbook lookup (RAG): the question is matched against OCR'd pages of NCTB textbooks stored in Supabase Postgres with pgvector, filtered by class and medium, and the best pages go to the model as context.
-- Three chat providers tried in order (OpenRouter, Hugging Face Inference Providers, Groq), so one provider being down or out of free quota does not stop answers.
+- Four chat providers tried in order (Groq, OpenRouter, Hugging Face Inference Providers, then the paid Vercel AI Gateway under a daily cap), so one provider being down or out of free quota does not stop answers.
 - Answers render as Markdown (headings, numbered and bulleted lists, code) with KaTeX math. The conversation stays in the browser and can be exported as a text file.
 - Per-IP rate limit and a 5-minute answer cache, both in Supabase (in memory for local work without it).
 - Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a store URL that is not a plain `https://` URL turns the store off (and `/api/health` reports it) and logs which variable to fix.
@@ -47,9 +47,10 @@ flowchart LR
   C -->|miss| E[shikhbo-api Edge Function<br/>embeds with gte-small]
   E --> Q[(Supabase pgvector<br/>NCTB pages)]
   Q --> P[Prompt with<br/>textbook context]
-  P --> O[OpenRouter]
+  P --> G[Groq]
+  G -.fails.-> O[OpenRouter]
   O -.fails.-> H[Hugging Face]
-  H -.fails.-> G[Groq]
+  H -.fails.-> W[AI Gateway<br/>daily cap]
 ```
 
 The app is a single Next.js 16 page plus `POST /api/teach` and `GET /api/health`.
@@ -59,7 +60,7 @@ The app is a single Next.js 16 page plus `POST /api/teach` and `GET /api/health`
 3. **Validation.** A zod schema accepts `user` and `assistant` turns only, keeps the last 10, requires an integer class from 1 to 12 and a medium of `english` or `bengali`, and caps lengths. HTML tags are stripped from questions.
 4. **Answer cache.** An exact-match cache for 5 minutes, keyed on class, medium and a SHA-256 hash of the latest question. It uses Supabase when the store is configured, otherwise server memory.
 5. **Retrieval.** The question goes to the `shikhbo-api` Supabase Edge Function, which embeds it with Supabase's built-in `gte-small` model (384 dimensions) and returns the 5 nearest pages for the class and medium from pgvector. If the call fails or takes more than 5 seconds, the tutor answers without textbook context instead of failing.
-6. **Generation.** Providers are tried in order: Groq, OpenRouter, Hugging Face Inference Providers. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned. If every provider fails, the route answers `503 providers_unavailable`.
+6. **Generation.** Providers are tried in order: Groq, OpenRouter, Hugging Face Inference Providers, Vercel AI Gateway. The gateway is billed per token, so it answers at most `GATEWAY_DAILY_LIMIT` questions a day (default 2000, about US$4 at typical answer lengths), counted in the store; with no store, or when the counter cannot be reached, it is skipped. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned. If every provider fails, the route answers `503 providers_unavailable`.
 
 Every error body has the shape `{ "error": "...", "code": "..." }`. The codes are `rate_limited` (429), `not_configured` (503), `too_large` (413), `invalid_input` (400), `providers_unavailable` (503) and `internal_error` (500). The chat shows its own Bangla or English message for `rate_limited`, `not_configured` and `providers_unavailable`, and a generic error message for the rest.
 
@@ -114,6 +115,7 @@ Set these in `.env.local` for local work, or in your host's settings. `.env.exam
 | `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |
 | `AI_GATEWAY_API_KEY` | Chat, last resort | Vercel AI Gateway, billed per token. Not needed on Vercel: a deployment there signs in with its own token, so the tutor answers with no chat key set |
 | `GATEWAY_MODEL` | Optional | Default `google/gemini-2.5-flash` |
+| `GATEWAY_DAILY_LIMIT` | Optional | Paid gateway answers per day, default `2000`. Needs the store |
 | `SHIKHBO_STORE_URL` | Textbook retrieval, answer cache, shared rate limit | The `shikhbo-api` Edge Function URL, `https://<project>.supabase.co/functions/v1/shikhbo-api`. Anything but a plain `https://` URL turns the store off |
 | `SHIKHBO_STORE_SECRET` | Same | A random secret whose SHA-256 is stored in `shikhbo.app_secret` |
 | `NEXT_PUBLIC_APP_URL` | Optional | Base URL for `sitemap.xml` and `robots.txt` |
@@ -228,7 +230,7 @@ This is a prototype, not a product in use.
 
 This app is aimed at children, so be clear about where a question goes:
 
-- **Model providers.** The question and the earlier turns of the conversation (up to 10 messages in all) go to the chat providers you configure: OpenRouter (and the model host it routes to), Hugging Face Inference Providers, and Groq. The question also goes to the `shikhbo-api` Supabase Edge Function, which embeds it inside Supabase; it is not stored. Each provider's own terms apply, and free tiers may log prompts. Read them before you deploy this for students.
+- **Model providers.** The question and the earlier turns of the conversation (up to 10 messages in all) go to the chat providers you configure: OpenRouter (and the model host it routes to), Hugging Face Inference Providers, Groq, and Vercel AI Gateway (and the model host it routes to). The question also goes to the `shikhbo-api` Supabase Edge Function, which embeds it inside Supabase; it is not stored. Each provider's own terms apply, and free tiers may log prompts. Read them before you deploy this for students.
 - **Answer cache.** The answer text is stored for 5 minutes in Supabase; expired answers are deleted on the next cache write. Without the store it is kept in server memory, where an expired answer is only removed when the same question comes in again or the server restarts. The key holds the class, the medium and a hash of the question, not the question itself.
 - **Rate limit.** A hash of the client IP is the rate-limit key. Supabase keeps each counter for about two minutes. The in-memory fallback keeps it until the server restarts, or until more than 10,000 keys are stored and expired ones are cleared.
 - **Logs.** The server does not log questions or answers. Failures log one short line with the provider, the error type and the error message, with URLs and long token-like strings replaced by `<url>` and `<redacted>`. Configuration problems log the variable name, never its value. Your host may keep its own request logs.

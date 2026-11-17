@@ -4,7 +4,9 @@
 // checks it against the stored SHA-256 (shikhbo.check_secret), so this
 // function holds no copy of it. Embeddings are made here with Supabase's
 // built-in gte-small model (384 dimensions, mean-pooled and normalized), the
-// same model for ingested pages and for questions.
+// same model for ingested pages and for questions. Searches also rank by
+// shared words (migration 20261117000000_hybrid_search.sql), since gte-small
+// is English-only.
 //
 // POST JSON, one of:
 //   { "op": "match", "query": string, "grade": 1-12, "medium": "english"|"bengali", "count"?: 1-20 }
@@ -23,6 +25,9 @@
 //   { "op": "centre_log", "centre", "code", "student", "question", "source": string | null } -> { "ok": true }
 //   { "op": "centre_stats", "centre", "code", "days"?: 1-90 }                  -> see CentreStats in src/lib/store.ts
 //   { "op": "centre_set_notes", "centre", "code", "title", "chunks": string[] } -> { "ok": true } (replaces the title; [] removes it)
+//
+// Bongo landing page:
+//   { "op": "pilot_request", "name", "centre", "phone", "city"?, "students"? } -> { "ok": true }
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
@@ -93,10 +98,12 @@ Deno.serve(async (req) => {
   try {
     switch (body.op) {
       case "match": {
-        const vector = await embed(str(body.query, "query", 2_000));
+        const query = str(body.query, "query", 2_000);
+        const vector = await embed(query);
+        // Meaning (gte-small) and shared words fused, so Bangla questions match too.
         const rows = await sql`
           select source, text, similarity
-          from shikhbo.match_pages(${vector}::extensions.vector, ${int(body.grade, "grade", 1, 12)},
+          from shikhbo.match_pages_hybrid(${vector}::extensions.vector, ${query}, ${int(body.grade, "grade", 1, 12)},
             ${medium(body.medium)}, ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
         return json({ matches: rows });
       }
@@ -141,14 +148,13 @@ Deno.serve(async (req) => {
       case "centre_match": {
         const centre = slug(body.centre);
         await sql`select shikhbo.check_centre_code(${centre}, ${code(body.code)}, false)`;
-        const vector = await embed(str(body.query, "query", 2_000));
+        const query = str(body.query, "query", 2_000);
+        const vector = await embed(query);
         const [info] = await sql`select name from shikhbo.centres where slug = ${centre}`;
         const rows = await sql`
-          select title || ', part ' || part as source, text,
-            1 - (embedding operator(extensions.<=>) ${vector}::extensions.vector) as similarity
-          from shikhbo.centre_notes where centre = ${centre}
-          order by embedding operator(extensions.<=>) ${vector}::extensions.vector
-          limit ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)}`;
+          select source, text, similarity
+          from shikhbo.match_centre_notes(${centre}, ${vector}::extensions.vector, ${query},
+            ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
         return json({ name: info?.name ?? centre, matches: rows });
       }
       case "centre_log": {
@@ -198,6 +204,15 @@ Deno.serve(async (req) => {
               values (${centre}, ${title}, ${i + 1}, ${chunks[i]}, ${vectors[i]}::extensions.vector)`;
           }
         });
+        return json({ ok: true });
+      }
+      case "pilot_request": {
+        const phone = str(body.phone, "phone", 20);
+        if (!/^\+?[0-9 -]{7,20}$/.test(phone)) throw new BadRequest("phone must be 7-20 digits");
+        const opt = (v: unknown, name: string, max: number) => (v === undefined || v === "" ? null : str(v, name, max));
+        await sql`insert into shikhbo.pilot_requests (name, centre, phone, city, students)
+          values (${str(body.name, "name", 80)}, ${str(body.centre, "centre", 120)}, ${phone},
+            ${opt(body.city, "city", 80)}, ${opt(body.students, "students", 20)})`;
         return json({ ok: true });
       }
       default:

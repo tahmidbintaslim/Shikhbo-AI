@@ -62,3 +62,21 @@ export function createRateLimiter(store: Store | null): RateLimiter {
     },
   };
 }
+
+/** Paid AI Gateway answers allowed per UTC-ish day (fixed 24 h window). */
+export const GATEWAY_DAILY_LIMIT = 2000;
+
+/**
+ * A spending cap for the per-token provider: one shared counter for the whole
+ * site. Unlike the per-address limit it fails closed, because an outage of the
+ * counter must not turn into an unbounded bill.
+ */
+export async function allowGatewayAnswer(store: Store | null, limit: number = GATEWAY_DAILY_LIMIT): Promise<boolean> {
+  if (!store) return false;
+  try {
+    return await store.rateLimit("gateway:daily", limit, 86_400);
+  } catch (err) {
+    console.warn(`[teach] gateway budget unavailable, skipping gateway: ${errorSummary(err)}`);
+    return false;
+  }
+}
