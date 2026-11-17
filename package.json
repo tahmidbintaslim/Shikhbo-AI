@@ -18,7 +18,7 @@
     "books:fetch": "node scripts/fetch-books.mjs"
   },
   "dependencies": {
-    "@ai-sdk/groq": "^3.0.16",
+    "@ai-sdk/groq": "^4.0.84",
     "@heroui/accordion": "^2.2.29",
     "@heroui/alert": "^2.2.32",
     "@heroui/autocomplete": "^2.3.34",
@@ -62,10 +62,10 @@
     "@heroui/tooltip": "^2.2.26",
     "@heroui/user": "^2.2.26",
     "@huggingface/inference": "^4.13.32",
-    "@openrouter/ai-sdk-provider": "^2.1.1",
+    "@openrouter/ai-sdk-provider": "^3.1.0",
     "@react-aria/ssr": "^3.10.1",
     "@react-aria/visually-hidden": "^3.8.29",
-    "ai": "^6.0.57",
+    "ai": "^7.0.173",
     "clsx": "^2.1.1",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.29.0",
