@@ -102,7 +102,19 @@ export function createStore(config: StoreConfig, fetchImpl: typeof fetch = globa
     centreSetNotes: async (centre: string, code: string, title: string, chunks: string[]) => {
       await call({ op: "centre_set_notes", centre, code, title, chunks }, undefined, NOTES_TIMEOUT_MS);
     },
+    /** A coaching centre's pilot request from the Bongo landing page. */
+    pilotRequest: async (request: PilotRequest) => {
+      await call({ op: "pilot_request", ...request });
+    },
   };
+}
+
+export interface PilotRequest {
+  name: string;
+  centre: string;
+  phone: string;
+  city?: string | undefined;
+  students?: string | undefined;
 }
 
 export type Store = ReturnType<typeof createStore>;

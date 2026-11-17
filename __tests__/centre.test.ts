@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { NOT_IN_NOTES, buildCentrePrompt, chunkNotes, parseCentreAction, parseCentreRequest, splitCoverage } from "../src/lib/centre";
+import { NOT_IN_NOTES, PilotRequestSchema, buildCentrePrompt, chunkNotes, parseCentreAction, parseCentreRequest, splitCoverage } from "../src/lib/centre";
 import { createStore } from "../src/lib/store";
 
 const ask = (over: Record<string, unknown> = {}) => ({
@@ -116,5 +116,18 @@ describe("citedSource", () => {
         expect(citedSource("The answer is 7.", matches)).toBeNull();
         expect(citedSource("See page 99.", matches)).toBeNull();
         expect(citedSource("See page 12.", [])).toBeNull();
+    });
+});
+
+describe("PilotRequestSchema", () => {
+    const ok = { name: "Rahim", centre: "Alo Coaching", phone: "+880 1711-000000" };
+    test("accepts a request and trims it", () => {
+        const r = PilotRequestSchema.safeParse({ ...ok, name: "  Rahim  ", city: "Dhaka" });
+        expect(r.success && r.data.name).toBe("Rahim");
+    });
+    test("rejects a bad phone, a missing centre and a filled honeypot", () => {
+        expect(PilotRequestSchema.safeParse({ ...ok, phone: "call me" }).success).toBe(false);
+        expect(PilotRequestSchema.safeParse({ ...ok, centre: "" }).success).toBe(false);
+        expect(PilotRequestSchema.safeParse({ ...ok, website: "spam.example" }).success).toBe(false);
     });
 });

@@ -25,6 +25,9 @@
 //   { "op": "centre_log", "centre", "code", "student", "question", "source": string | null } -> { "ok": true }
 //   { "op": "centre_stats", "centre", "code", "days"?: 1-90 }                  -> see CentreStats in src/lib/store.ts
 //   { "op": "centre_set_notes", "centre", "code", "title", "chunks": string[] } -> { "ok": true } (replaces the title; [] removes it)
+//
+// Bongo landing page:
+//   { "op": "pilot_request", "name", "centre", "phone", "city"?, "students"? } -> { "ok": true }
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
@@ -201,6 +204,15 @@ Deno.serve(async (req) => {
               values (${centre}, ${title}, ${i + 1}, ${chunks[i]}, ${vectors[i]}::extensions.vector)`;
           }
         });
+        return json({ ok: true });
+      }
+      case "pilot_request": {
+        const phone = str(body.phone, "phone", 20);
+        if (!/^\+?[0-9 -]{7,20}$/.test(phone)) throw new BadRequest("phone must be 7-20 digits");
+        const opt = (v: unknown, name: string, max: number) => (v === undefined || v === "" ? null : str(v, name, max));
+        await sql`insert into shikhbo.pilot_requests (name, centre, phone, city, students)
+          values (${str(body.name, "name", 80)}, ${str(body.centre, "centre", 120)}, ${phone},
+            ${opt(body.city, "city", 80)}, ${opt(body.students, "students", 20)})`;
         return json({ ok: true });
       }
       default:

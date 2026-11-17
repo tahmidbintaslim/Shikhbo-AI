@@ -111,3 +111,16 @@ export function chunkNotes(text: string, max: number = NOTE_CHUNK_CHARS): string
   flush();
   return chunks;
 }
+
+/**
+ * A pilot request from the Bongo landing page. `website` is a honeypot: the
+ * form hides it, so a filled value means a bot.
+ */
+export const PilotRequestSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  centre: z.string().trim().min(1).max(120),
+  phone: z.string().trim().regex(/^\+?[0-9 -]{7,20}$/),
+  city: z.string().trim().max(80).optional(),
+  students: z.string().trim().max(20).optional(),
+  website: z.string().max(0).optional(),
+});
