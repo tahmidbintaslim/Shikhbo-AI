@@ -6,7 +6,7 @@ A homework tutor for students in Bangladesh that explains answers step by step, 
 [![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-lightgrey.svg)](LICENSE)
 ![Status: prototype](https://img.shields.io/badge/status-prototype-orange.svg)
 
-**Status: prototype.** Textbook lookup covers four NCTB Class 1 books. A new deployment builds at https://shikhbo-ai.vercel.app, but it has no chat provider key yet, so it cannot answer; see [Status](#status).
+**Status: prototype.** Live at https://shikhbo-ai.vercel.app. Textbook lookup covers four NCTB Class 1 books. Answers come through Vercel AI Gateway, which bills per token; see [Status](#status).
 
 **Direction.** Shikhbo AI is narrowing to homework help for Classes 1 to 5, paid for by parents: a photo of tonight's homework, a hint before the answer, and a weekly view of what the child found hard. None of that is built yet. This repository also holds the engine and the first pilot of Bongo AI, a tutor for coaching centres; see [Coaching-centre pilot](#coaching-centre-pilot-bongo-ai).
 
@@ -112,6 +112,8 @@ Set these in `.env.local` for local work, or in your host's settings. `.env.exam
 | `OPENROUTER_MODEL` | Optional | Default `google/gemma-4-31b-it:free` |
 | `HF_CHAT_MODEL` | Optional | Default `google/gemma-4-26B-A4B-it` |
 | `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |
+| `AI_GATEWAY_API_KEY` | Chat, last resort | Vercel AI Gateway, billed per token. Not needed on Vercel: a deployment there signs in with its own token, so the tutor answers with no chat key set |
+| `GATEWAY_MODEL` | Optional | Default `google/gemini-2.5-flash` |
 | `SHIKHBO_STORE_URL` | Textbook retrieval, answer cache, shared rate limit | The `shikhbo-api` Edge Function URL, `https://<project>.supabase.co/functions/v1/shikhbo-api`. Anything but a plain `https://` URL turns the store off |
 | `SHIKHBO_STORE_SECRET` | Same | A random secret whose SHA-256 is stored in `shikhbo.app_secret` |
 | `NEXT_PUBLIC_APP_URL` | Optional | Base URL for `sitemap.xml` and `robots.txt` |
@@ -202,16 +204,15 @@ docs/images/                   README screenshots
 
 This is a prototype, not a product in use.
 
-**Live demo.** https://shikhbo-ai.vercel.app is a new Vercel project created on 2026-11-11 (the earlier project is gone). It builds from `main`, and `/api/health` answers `503` with `"ok": false` because no chat provider key or store secret is set there yet. Once both are set and `/api/health` reports `"ok": true`, the demo link goes back at the top of this file.
+**Live demo.** https://shikhbo-ai.vercel.app builds from `main`. No chat provider key is stored there: the tutor answers through Vercel AI Gateway with the deployment's own token, and the store secret is set, so `/api/health` should report `"ok": true` and `"textbookRetrieval": true`. If it does not, check the project's environment variables and AI Gateway credit.
 
 **Roadmap**, in order:
 
-1. Add a chat provider key and the store secret to the deployment.
-2. Run the coaching-centre pilot with real centres, and add PDF and photo upload for their notes.
-3. Use a multilingual embedding model and chunk pages, so Bangla questions find the right page or note.
-4. Index the Class 1 to 5 textbooks, once NCTB's terms for reusing them are confirmed.
-5. Photo questions, hints before answers and the parent's weekly view.
-6. Stream answers, and add content moderation before students use it.
+1. Run the coaching-centre pilot with real centres, and add PDF and photo upload for their notes.
+2. Use a multilingual embedding model and chunk pages, so Bangla questions find the right page or note.
+3. Index the Class 1 to 5 textbooks, once NCTB's terms for reusing them are confirmed.
+4. Photo questions, hints before answers and the parent's weekly view.
+5. Stream answers, and add content moderation before students use it.
 
 ## Limitations
 
