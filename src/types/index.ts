@@ -3,6 +3,8 @@ export interface Message {
   readonly content: string
   readonly role: 'user' | 'assistant' | 'system'
   readonly timestamp: Date
+  /** The note or page an answer came from, when the server knows it. */
+  readonly source?: string
 }
 
 export interface ChatModel {

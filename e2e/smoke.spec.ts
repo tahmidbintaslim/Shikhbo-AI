@@ -30,10 +30,14 @@ test("only classes with indexed textbooks can be picked", async ({ page }) => {
   await expect(page.getByRole("option", { name: "Class 2" })).toBeDisabled();
 });
 
-test("the hero button focuses the question box", async ({ page }) => {
+test("an available subject card starts the question and focuses the box", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: /শুরু করি/ }).click();
+  // The chat box mounts after the page; the subject card focuses it by id.
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeVisible();
+  await page.getByRole("button", { name: /^গণিত/ }).click();
   await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeFocused();
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toHaveValue("আমি গণিত এর সাহায্য চাই।");
+  await expect(page.getByRole("button", { name: /^পদার্থবিজ্ঞান/ })).toBeDisabled();
 });
 
 test("the language switch also picks the textbook", async ({ page }) => {
@@ -89,4 +93,22 @@ test.describe("without a provider key", () => {
     await page.getByRole("button", { name: "প্রশ্ন পাঠাও" }).click();
     await expect(page.getByText("এই সাইটে টিউটর এখনো চালু করা হয়নি")).toBeVisible();
   });
+});
+
+test("the home page has no horizontal scroll on a small phone", async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 740 });
+  await page.goto("/");
+  await expect(page.getByLabel("প্রশ্ন লেখার ঘর")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBe(0);
+});
+
+test("an answer shows the source it came from", async ({ page }) => {
+  await page.route("**/api/teach", (route) =>
+    route.fulfill({ json: { result: "**উত্তর: ৭**", source: "শ্রেণি ১ গণিত, পৃষ্ঠা ১২" } }),
+  );
+  await page.goto("/");
+  await page.getByLabel("প্রশ্ন লেখার ঘর").fill("৩ আর ৪ যোগ করলে কত হয়?");
+  await page.getByRole("button", { name: "প্রশ্ন পাঠাও" }).click();
+  await expect(page.getByText("উত্তর: ৭")).toBeVisible();
+  await expect(page.getByText("শ্রেণি ১ গণিত, পৃষ্ঠা ১২")).toBeVisible();
 });

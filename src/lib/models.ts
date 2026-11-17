@@ -8,6 +8,8 @@ export const DEFAULT_MODELS = {
   huggingface: "google/gemma-4-26B-A4B-it",
   /** Groq, tried first. */
   groq: "openai/gpt-oss-120b",
+  /** Vercel AI Gateway, the last resort: paid per token, but needs no key on Vercel. */
+  gateway: "google/gemini-2.5-flash",
 } as const;
 
 export type ModelConfig = { [K in keyof typeof DEFAULT_MODELS]: string };
@@ -24,5 +26,6 @@ export function getModelConfig(env: Env = process.env): ModelConfig {
     openrouter: pick(env.OPENROUTER_MODEL, DEFAULT_MODELS.openrouter),
     huggingface: pick(env.HF_CHAT_MODEL, DEFAULT_MODELS.huggingface),
     groq: pick(env.GROQ_MODEL, DEFAULT_MODELS.groq),
+    gateway: pick(env.GATEWAY_MODEL, DEFAULT_MODELS.gateway),
   };
 }

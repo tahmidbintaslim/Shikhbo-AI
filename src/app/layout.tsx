@@ -1,31 +1,21 @@
-import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Outfit } from "next/font/google";
+import { DM_Sans, Hind_Siliguri } from "next/font/google";
 import React from "react";
 import "./globals.css";
 import { Providers } from "./provider";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 
-const outfit = Outfit({
+// DM Sans sets Latin letters and digits; Hind Siliguri sets Bangla. The
+// centre pages swap DM Sans for Instrument Sans (src/app/c/[slug]/layout.tsx).
+const dmSans = DM_Sans({
   subsets: ["latin"],
-  variable: "--font-outfit",
-  display: "swap",
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-dm",
   display: "swap",
 });
 
 const hindSiliguri = Hind_Siliguri({
-  weight: ["300", "400", "500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
   subsets: ["bengali"],
   variable: "--font-hind",
-  display: "swap",
-});
-
-const notoSansBengali = Noto_Sans_Bengali({
-  subsets: ["bengali"],
-  variable: "--font-noto",
   display: "swap",
 });
 
@@ -111,10 +101,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="bn" suppressHydrationWarning>
-      <body
-        className={`${inter.variable} ${outfit.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} antialiased`}
-      >
+    <html lang="bn" className={`light ${dmSans.variable} ${hindSiliguri.variable}`} suppressHydrationWarning>
+      <body>
         <ErrorBoundary>
           <Providers>{children}</Providers>
         </ErrorBoundary>

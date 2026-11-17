@@ -1,68 +1,26 @@
 import { heroui } from "@heroui/theme";
 
+// HeroUI is used only for the class picker. Its colours and corners follow
+// the tokens in src/app/globals.css; the site has one (light) theme.
 export default heroui({
   themes: {
     light: {
       layout: {
-        radius: {
-          small: "8px",
-          medium: "14px",
-          large: "24px",
-        },
-        borderWidth: {
-          small: "1px",
-          medium: "1px",
-          large: "2px",
-        },
+        radius: { small: "8px", medium: "10px", large: "14px" },
+        borderWidth: { small: "1px", medium: "1px", large: "2px" },
       },
       colors: {
-        background: "#FFFFFF",
-        foreground: "#111827",
-        primary: {
-          DEFAULT: "#12355B",
-          foreground: "#ffffff",
-        },
-        secondary: {
-          DEFAULT: "#FCBA04",
-          foreground: "#12355B",
-        },
+        background: "#ffffff",
+        foreground: "#0f172a",
+        primary: { DEFAULT: "#007a7a", foreground: "#ffffff" },
+        danger: { DEFAULT: "#b42318", foreground: "#ffffff" },
         default: {
-          50: "#f9fafb",
-          100: "#f3f4f6",
-          200: "#e5e7eb",
-          DEFAULT: "#d1d5db",
-          foreground: "#374151",
+          100: "#f1f5f9",
+          200: "#e0f7f5",
+          DEFAULT: "#d5dbe3",
+          foreground: "#0f172a",
         },
-        focus: "#12355B",
-      },
-    },
-    dark: {
-      layout: {
-        radius: {
-          small: "8px",
-          medium: "14px",
-          large: "24px",
-        },
-      },
-      colors: {
-        background: "#05070A",
-        foreground: "#ECEDEE",
-        primary: {
-          DEFAULT: "#355DAB",
-          foreground: "#ffffff",
-        },
-        secondary: {
-          DEFAULT: "#FCBA04",
-          foreground: "#000000",
-        },
-        default: {
-          50: "#18181b",
-          100: "#27272a",
-          200: "#3f3f46",
-          DEFAULT: "#52525b",
-          foreground: "#d4d4d8",
-        },
-        focus: "#FCBA04",
+        focus: "#007a7a",
       },
     },
   },

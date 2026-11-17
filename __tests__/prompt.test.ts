@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { sourceLabel, formatContext } from "../src/lib/retrieval";
-import { buildSystemPrompt, getCacheKey, PROMPT_VERSION } from "../src/lib/teach";
+import { buildSystemPrompt, getCacheKey, PROMPT_VERSION, stripEmoji } from "../src/lib/teach";
 
 describe("buildSystemPrompt", () => {
   test("answers in the student's medium", () => {
@@ -36,6 +36,34 @@ describe("greetings and cache", () => {
 
   test("cache keys change with the prompt version", () => {
     expect(getCacheKey("hi", 1, "english").startsWith(`v${PROMPT_VERSION}:`)).toBe(true);
+  });
+});
+
+describe("tutor voice", () => {
+  test("the prompt forbids emoji", () => {
+    expect(buildSystemPrompt(1, "english", "")).toContain("Never use emoji");
+  });
+
+  test("stripEmoji removes emoji and the space after them", () => {
+    expect(stripEmoji("Hello \u{1F44B} world")).toBe("Hello world");
+    expect(stripEmoji("\u{1F34C}\u{1F34C}\u{1F34C} three bananas")).toBe("three bananas");
+    expect(stripEmoji("\u2705 Done")).toBe("Done");
+    expect(stripEmoji("ok\uFE0F")).toBe("ok");
+  });
+
+  test("stripEmoji handles keycap digits, flags and joined sequences", () => {
+    expect(stripEmoji("3\uFE0F\u20E3 + 4\uFE0F\u20E3 = 7\uFE0F\u20E3")).toBe("3 + 4 = 7");
+    expect(stripEmoji("\u{1F1E7}\u{1F1E9} Bangladesh")).toBe("Bangladesh");
+    expect(stripEmoji("\u{1F468}\u200D\u{1F469}\u200D\u{1F467} family")).toBe("family");
+    expect(stripEmoji("\u{1F44D}\u{1F3FD} good")).toBe("good");
+  });
+
+  test("stripEmoji keeps digits, math and Bangla (including ZWJ conjuncts)", () => {
+    expect(stripEmoji("3 + 4 = 7")).toBe("3 + 4 = 7");
+    expect(stripEmoji("5 \u2192 4, 6 \u00D7 2, 8 \u00F7 2, 9 \u2212 3")).toBe("5 \u2192 4, 6 \u00D7 2, 8 \u00F7 2, 9 \u2212 3");
+    expect(stripEmoji("৩ আর ৪ যোগ করলে ৭")).toBe("৩ আর ৪ যোগ করলে ৭");
+    const conjunct = "র\u200D্য";
+    expect(stripEmoji(conjunct)).toBe(conjunct);
   });
 });
 

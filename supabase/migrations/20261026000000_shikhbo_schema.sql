@@ -4,7 +4,8 @@
 -- The schema is not exposed through the Supabase API (no role has USAGE on
 -- it). The app reaches it only through the shikhbo-api Edge Function
 -- (supabase/functions/shikhbo-api), which connects with SUPABASE_DB_URL and
--- calls the public.shikhbo_* functions below. The cache, rate-limit and page
+-- calls the shikhbo_* functions below (moved into the shikhbo schema by
+-- 20261027000000_shikhbo_private_functions.sql). The cache, rate-limit and page
 -- functions need the server secret (SHIKHBO_STORE_SECRET), checked against
 -- its SHA-256 in shikhbo.app_secret; the function checks it on every request.
 --

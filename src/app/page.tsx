@@ -1,199 +1,10 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
-import { motion } from "framer-motion";
 import { ChatProvider, useChatContext } from "@/components/ChatProvider";
-import type { Locale } from "@/hooks/useChat";
 import { GRADES, INDEXED_GRADES } from "@/lib/teach-limits";
-import CONTENT, { SUBJECTS } from "@/data/landing-content";
-import { SimpleFooter } from "@/components/SimpleFooter";
-import { Card, CardBody } from "@heroui/card";
-import { Button } from "@heroui/button";
+import CONTENT, { REPO_URL, SUBJECTS } from "@/data/landing-content";
 import { Select, SelectItem } from "@heroui/select";
-import { Chip } from "@heroui/chip";
-import { Switch } from "@heroui/switch";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-} from "@heroui/table";
-import { useTheme } from "next-themes";
 import ChatAutoMount from "@/components/ChatAutoMount";
 import "./globals.css";
-
-// START: Icons and ThemeSwitcher
-const MoonIcon = (props: any) => (
-  <svg
-    aria-hidden="true"
-    focusable="false"
-    height="1em"
-    role="presentation"
-    viewBox="0 0 24 24"
-    width="1em"
-    {...props}
-  >
-    <path
-      d="M21.53 15.93c-.16-.27-.61-.69-1.73-.49a8.46 8.46 0 01-1.88.13 8.409 8.409 0 01-5.91-2.82 8.068 8.068 0 01-1.44-8.66c.44-1.01.13-1.54-.09-1.76s-.77-.55-1.83-.11a10.318 10.318 0 00-6.32 10.21 10.475 10.475 0 007.04 8.99 10 10 0 002.89.55c.16.01.32.02.48.02a10.5 10.5 0 008.47-4.27c.67-.93.49-1.519.32-1.79z"
-      fill="currentColor"
-    />
-  </svg>
-);
-
-const SunIcon = (props: any) => (
-  <svg
-    aria-hidden="true"
-    focusable="false"
-    height="1em"
-    role="presentation"
-    viewBox="0 0 24 24"
-    width="1em"
-    {...props}
-  >
-    <g fill="currentColor">
-      <path d="M19 12a7 7 0 11-7-7 7 7 0 017 7z" />
-      <path d="M12 22.96a.969.969 0 01-1-.96v-.08a1 1 0 012 0 1.038 1.038 0 01-1 1.04zm7.14-2.82a1.024 1.024 0 01-.71-.29l-.13-.13a1 1 0 011.41-1.41l.13.13a1 1 0 010 1.41.984.984 0 01-.7.29zm-14.28 0a1.024 1.024 0 01-.71-.29 1 1 0 010-1.41l.13-.13a1 1 0 011.41 1.41l-.13.13a1 1 0 01-.7.29zM22 13h-.08a1 1 0 010-2 1.038 1.038 0 011.04 1 .969.969 0 01-.96 1zM2.08 13H2a1 1 0 010-2 1.038 1.038 0 011.04 1 .969.969 0 01-.96 1zm16.93-7.01a1.024 1.024 0 01-.71-.29 1 1 0 010-1.41l.13-.13a1 1 0 011.41 1.41l-.13.13a.984.984 0 01-.7.29zm-14.02 0a1.024 1.024 0 01-.71-.29l-.13-.14a1 1 0 011.41-1.41l.13.13a1 1 0 010 1.41.97.97 0 01-.7.3zM12 3.04a.969.969 0 01-1-.96V2a1 1 0 012 0 1.038 1.038 0 01-1 1.04z" />
-    </g>
-  </svg>
-);
-
-function ThemeSwitcher() {
-  const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  useEffect(() => setMounted(true), []);
-
-  if (!mounted) return null;
-
-  return (
-    <Switch
-      isSelected={theme === "dark"}
-      onValueChange={(isSelected) => setTheme(isSelected ? "dark" : "light")}
-      aria-label="Toggle color theme"
-      size="md"
-      color="secondary"
-      thumbIcon={({ isSelected, className }) =>
-        isSelected ? (
-          <MoonIcon className={className} />
-        ) : (
-          <SunIcon className={className} />
-        )
-      }
-    />
-  );
-}
-// END: Icons and ThemeSwitcher
-
-function ComparisonTable({ t, locale }: { t: any; locale: Locale }) {
-  const criteriaLabel = locale === "bn" ? "মানদণ্ড" : "Criteria";
-  const privateLabel =
-    t?.compare?.private ??
-    (locale === "bn" ? "প্রাইভেট টিউটর" : "Private Tutor");
-  const usLabel = t?.compare?.us ?? "Shikhbo AI";
-  const rows = t?.compare?.points || [];
-  const columns = [
-    { name: criteriaLabel, uid: "criteria" },
-    { name: privateLabel, uid: "private" },
-    { name: usLabel, uid: "us" },
-  ];
-
-  const renderCell = useCallback((row: any, columnKey: React.Key) => {
-    switch (columnKey) {
-      case "criteria":
-        return (
-          <div className="text-xs uppercase tracking-widest text-default-500 dark:text-default-400">
-            {row.label}
-          </div>
-        );
-      case "private":
-        return (
-          <div className="text-default-600 dark:text-default-300">{row.p}</div>
-        );
-      case "us":
-        return (
-          <Chip
-            color="primary"
-            variant="flat"
-            className="text-sm font-semibold"
-          >
-            {row.u}
-          </Chip>
-        );
-      default:
-        return row.label;
-    }
-  }, []);
-
-  return (
-    <motion.section className="col-span-12 mt-6 max-w-6xl mx-auto w-full">
-      <Card className="glass-panel overflow-hidden">
-        <CardBody>
-          <div className="relative px-2 py-2">
-            <div className="relative bg-linear-to-br from-white/10 via-transparent to-transparent pointer-events-none" />
-            <div className="relative flex flex-col gap-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs uppercase tracking-widest text-default-500 dark:text-default-400">
-                    {locale === "bn" ? "তুলনা" : "Comparison"}
-                  </div>
-                  <div className="text-xl sm:text-2xl font-semibold text-foreground">
-                    {t?.compare?.title}
-                  </div>
-                </div>
-              </div>
-              <div className="-mx-2 overflow-x-auto px-2 pb-1">
-                <Table
-                  aria-label={t?.compare?.title ?? criteriaLabel}
-                  removeWrapper
-                  classNames={{
-                    base: "min-w-[420px] sm:min-w-[520px] w-full",
-                    table: "border-separate border-spacing-y-3",
-                    thead: "hidden sm:table-header-group",
-                    th: "text-xs uppercase tracking-widest text-default-500 dark:text-default-400 bg-foreground/5 dark:bg-foreground/10",
-                    tr: "bg-black/10 dark:bg-white/10",
-                    td: "bg-black/10 dark:bg-black/60 border border-white/40 dark:border-white/25 text-sm sm:text-base text-foreground",
-                  }}
-                >
-                  <TableHeader columns={columns}>
-                    {(column) => (
-                      <TableColumn
-                        key={column.uid}
-                        align={column.uid === "criteria" ? "start" : "center"}
-                      >
-                        {column.name}
-                      </TableColumn>
-                    )}
-                  </TableHeader>
-                  <TableBody items={rows}>
-                    {(row: any) => (
-                      <TableRow key={row.label}>
-                        {(columnKey) => (
-                          <TableCell
-                            className={
-                              columnKey === "criteria"
-                                ? "rounded-l-xl"
-                                : columnKey === "us"
-                                  ? "rounded-r-xl"
-                                  : undefined
-                            }
-                          >
-                            {renderCell(row, columnKey)}
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    )}
-                  </TableBody>
-                </Table>
-              </div>
-            </div>
-          </div>
-        </CardBody>
-      </Card>
-    </motion.section>
-  );
-}
 
 export default function Page() {
   return (
@@ -203,6 +14,25 @@ export default function Page() {
   );
 }
 
+const Arrow = () => (
+  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" aria-hidden="true">
+    <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+const Pencil = () => (
+  <svg viewBox="0 0 20 20" width="18" height="18" fill="none" aria-hidden="true">
+    <path d="M3 17l1-4L14 3l3 3L7 16l-4 1z" stroke="#5eead4" strokeWidth="1.75" strokeLinejoin="round" />
+  </svg>
+);
+const Mark = ({ ok }: { ok: boolean }) => (
+  <svg viewBox="0 0 20 20" width="20" height="20" fill="none" aria-hidden="true" className="mt-1 flex-none">
+    <circle cx="10" cy="10" r="10" fill={ok ? "#c9f3e6" : "#e2e8f0"} />
+    <path d={ok ? "M6 10.5l2.5 2.5L14 7.5" : "M6.5 10h7"} stroke={ok ? "#064e43" : "#475569"} strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+// Hero with the working chat in a laptop frame, then: how it works, subjects
+// and classes, what it can and cannot do, questions, footer.
 function Landing() {
   const {
     locale,
@@ -214,234 +44,265 @@ function Landing() {
   } = useChatContext();
   const chatInputId = "chat-input"; // convention: ChatInterface input should use this id
 
-  const subjects = SUBJECTS;
-
-  const L: any = (CONTENT as any)[locale];
-  const brand = locale === "bn" ? "শিখবো AI" : "Shikhbo AI";
-  const classLabel = locale === "bn" ? "শ্রেণি" : "Class";
-  const heroLines = String(L?.hero?.title ?? "").split("\n");
-  const soon = locale === "bn" ? "শীঘ্রই" : "coming soon";
+  const L = CONTENT[locale];
   const num = (n: number | string) =>
     locale === "bn" ? String(n).replace(/\d/g, (d) => "০১২৩৪৫৬৭৮৯"[Number(d)] ?? d) : String(n);
-  const focusChat = () => document.getElementById(chatInputId)?.focus();
   const classOptions = GRADES.map((g) => ({
     id: `${g}`,
-    label: locale === "bn" ? `শ্রেণি ${num(g)}` : `Class ${g}`,
+    label: `${L.classLabel} ${num(g)}`,
     ready: INDEXED_GRADES.includes(g),
   }));
   const disabledClasses = classOptions.filter((c) => !c.ready).map((c) => c.id);
-
+  const classSupport = locale === "bn" ? `শ্রেণি ${num(selectedClass)} সহায়তা` : `Class ${selectedClass} support`;
+  const focusChat = () => document.getElementById(chatInputId)?.focus();
 
   const handleSubjectSelect = (subject: (typeof SUBJECTS)[number]) => {
-    const prompt =
-      locale === "bn"
-        ? `আমি ${subject.name.bn} এর সাহায্য চাই।`
-        : `I need help with ${subject.name.en}.`;
-    setInput(prompt);
-    const el = document.getElementById(chatInputId) as HTMLElement | null;
-    if (el) el.focus();
+    setInput(locale === "bn" ? `আমি ${subject.name.bn} এর সাহায্য চাই।` : `I need help with ${subject.name.en}.`);
+    focusChat();
   };
+  const sections = [
+    ["#how", L.nav.how],
+    ["#subjects", L.nav.subjects],
+    ["#limits", L.nav.limits],
+    ["#faq", L.nav.faq],
+  ] as const;
 
   return (
-    <div className="min-h-screen">
-      <motion.header
-        initial={{ y: -12, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="sticky top-0 z-50 w-full px-4 sm:px-6"
-      >
-        <div className="max-w-6xl mx-auto pt-4">
-          <div className="glass-panel rounded-2xl px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <div className="glass-card h-9 w-9 rounded-xl flex items-center justify-center text-xs font-semibold tracking-wide">
-                AI
-              </div>
-              <div>
-                <div className="text-xl sm:text-2xl font-semibold leading-none text-foreground">
-                  {brand}
-                </div>
-                <div className="text-xs text-default-500 dark:text-default-400">
-                  {locale === "bn"
-                    ? "তৎক্ষণাৎ সমাধান, ২৪/৭"
-                    : "Instant answers, 24/7"}
-                </div>
-              </div>
-            </div>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
-              <Select
-                aria-label={classLabel}
-                size="sm"
-                selectedKeys={new Set([selectedClass])}
-                disabledKeys={disabledClasses}
-                onSelectionChange={(keys) => {
-                  const next = Array.from(keys as Set<string>)[0];
-                  if (next) setGrade(next);
-                }}
-                variant="bordered"
-                className="w-full sm:w-36"
-                classNames={{
-                  trigger:
-                    "rounded-lg bg-black/10 border-white/40 text-foreground dark:bg-black/70 dark:border-white/25 dark:text-foreground px-3 py-2",
-                  value: "text-foreground",
-                  popoverContent:
-                    "bg-black/95 border border-white/25 text-white shadow-xl",
-                  listbox: "text-sm",
-                }}
-              >
-                {classOptions.map((c) => (
-                  <SelectItem key={c.id} textValue={c.label}>
-                    {c.ready ? c.label : `${c.label} · ${soon}`}
-                  </SelectItem>
-                ))}
-              </Select>
+    <div className="mint">
+      <div className="shell sticky top-3 z-40 pt-3 md:top-5">
+        <header className="flex items-center justify-between gap-3 rounded-2xl bg-white/85 px-4 py-2.5 shadow-[0_8px_30px_-12px_rgb(15_23_42/0.18)] backdrop-blur md:px-6">
+          <div className="text-xl font-bold tracking-tight">{L.brand}</div>
+          <nav aria-label={L.navLabel} className="hidden items-center gap-6 lg:flex">
+            {sections.map(([href, label]) => (
+              <a key={href} href={href} className="link font-medium">
+                {label}
+              </a>
+            ))}
+          </nav>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="btn btn-outline"
+              aria-label={locale === "bn" ? "Switch to English and the English version books" : "বাংলা ও বাংলা ভার্সন বইয়ে যাও"}
+              onClick={() => {
+                // One switch: the site language is also the textbook medium.
+                const next = locale === "bn" ? "en" : "bn";
+                setLocale(next);
+                setLanguage(next === "bn" ? "bengali" : "english");
+              }}
+            >
+              {locale === "bn" ? "English" : "বাংলা"}
+            </button>
+            <button type="button" className="btn btn-black max-sm:hidden" onClick={focusChat}>
+              {L.ask}
+            </button>
+          </div>
+        </header>
+      </div>
 
-
-              <Button
-                size="sm"
-                variant="bordered"
-                aria-label={locale === "bn" ? "Switch to English and the English version books" : "বাংলা ও বাংলা ভার্সন বইয়ে যাও"}
-                onPress={() => {
-                  // One switch: the site language is also the textbook medium.
-                  const next = locale === "bn" ? "en" : "bn";
-                  setLocale(next);
-                  setLanguage(next === "bn" ? "bengali" : "english");
-                }}
-                className="rounded-lg border-white/40 dark:border-white/25 text-foreground"
-              >
-                {locale === "bn" ? "English" : "বাংলা"}
-              </Button>
-
-              <ThemeSwitcher />
+      <main role="main" aria-label={L.main}>
+        <section className="shell grid grid-cols-1 items-center gap-x-10 gap-y-12 pb-20 pt-10 lg:grid-cols-12 lg:pb-28 lg:pt-16">
+          <div className="lg:col-span-5">
+            <p className="pill">
+              <span className="size-2 rounded-full bg-accent" aria-hidden="true" />
+              {L.badge}
+            </p>
+            <h1 className="mt-4">
+              <span className="gradient-text">{L.titleAccent}</span> {L.titleRest}
+            </h1>
+            <p className="muted mt-5 max-w-[46ch] text-lg">{L.subtitle}</p>
+            <div className="mt-8 flex flex-wrap items-center gap-x-8 gap-y-2">
+              <button type="button" className="btn btn-primary btn-lg" onClick={focusChat}>
+                <Pencil />
+                {L.cta}
+              </button>
+              <a href="#how" className="link">
+                {L.ctaLink}
+                <Arrow />
+              </a>
             </div>
           </div>
-        </div>
-      </motion.header>
 
-      <main
-        role="main"
-        aria-label={locale === "bn" ? "মূল বিষয়বস্তু" : "Main content"}
-        className="px-4 sm:px-6 pb-4"
-      >
-        <div className="max-w-6xl mx-auto grid grid-cols-12 gap-6 sm:gap-8 items-start mt-6">
-          <motion.section
-            initial={{ x: -12, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="col-span-12 lg:col-span-5"
-          >
-            <Card className="glass-panel p-2">
-              <CardBody>
-                <div className="glass-card rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-widest text-default-600 dark:text-default-300 w-max">
-                  {L?.hero?.badge}
-                </div>
-                <h1 className="mt-4 text-4xl sm:text-5xl lg:text-6xl font-extrabold leading-tight text-foreground">
-                  {heroLines.map((line, idx) => {
-                    const isAccent = idx === heroLines.length - 1;
-                    return (
-                      <span
-                        key={`${line}-${idx}`}
-                        className={
-                          isAccent
-                            ? "bg-clip-text text-transparent bg-linear-to-b from-[#5EA2EF] to-[#0072F5] dark:from-[#FFFFFF] dark:to-[#B7C0CC]"
-                            : undefined
-                        }
-                      >
-                        {line}
-                        {idx < heroLines.length - 1 ? <br /> : null}
-                      </span>
-                    );
-                  })}
-                </h1>
-                <p className="text-base sm:text-lg text-default-600 dark:text-default-300 mt-4 max-w-xl">
-                  {L?.hero?.subtitle}
-                </p>
-                <div className="flex flex-wrap gap-3 mt-6">
-                  <Button className="glass-btn-primary" radius="full" onPress={focusChat}>
-                    {L?.hero?.cta}
-                  </Button>
-                </div>
-                <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {(L?.hero?.stats || [])
-                    .slice(0, 2)
-                    .map((s: any, i: number) => (
-                      <div
-                        key={i}
-                        className="glass-card px-4 py-3 text-sm font-semibold text-foreground"
-                      >
-                        {s}
-                      </div>
-                    ))}
-                </div>
-              </CardBody>
-            </Card>
-
-            <div className="mt-8" id="subjects">
-              <h3 className="text-lg font-semibold mb-4">
-                {L?.syllabus?.title}
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                {subjects.map((s: any) => {
-                  const Icon = s.icon;
-                  return (
-                    <motion.div key={s.id} whileHover={{ scale: 1.02 }}>
-                      <Card
-                        // HeroUI Card ignores onClick unless isPressable is set;
-                        // onPress also covers Enter and Space.
-                        isPressable={s.indexed}
-                        isDisabled={!s.indexed}
-                        onPress={() => handleSubjectSelect(s)}
-                        aria-label={
-                          locale === "bn"
-                            ? `${s.name.bn} - ${s.indexed ? `শ্রেণি ${num(selectedClass)} সহায়তা` : soon}`
-                            : `${s.name.en} - ${s.indexed ? `Class ${selectedClass} support` : soon}`
-                        }
-                        className="glass-card-hover p-0 rounded-2xl w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-primary/60"
-                      >
-                        <CardBody className="flex flex-col items-center justify-center gap-3 px-2h-full text-center">
-                          <div
-                            className={`${s.color} glass-card w-14 h-14 flex items-center justify-center rounded-2xl`}
-                          >
-                            <Icon className="w-6 h-6" />
-                          </div>
-                          <div className="font-semibold text-sm mt-1">
-                            {locale === "bn" ? s.name.bn : s.name.en}
-                          </div>
-                          <div className="text-xs text-default-500 dark:text-default-400 mt-1">
-                            {!s.indexed
-                              ? soon
-                              : locale === "bn"
-                                ? `শ্রেণি ${num(selectedClass)} সহায়তা`
-                                : `Class ${selectedClass} support`}
-                          </div>
-                        </CardBody>
-                      </Card>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.section>
-
-          <motion.section
-            initial={{ x: 12, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            className="col-span-12 lg:col-span-7"
-          >
-            <Card className="glass-panel">
-              <CardBody>
-                <div
-                  id="chat-interface"
-                  className="h-160 rounded-2xl glass-card flex items-center justify-center"
+          <div className="relative lg:col-span-7 lg:px-10 lg:py-8">
+            <ul className="mb-4 flex flex-wrap gap-2 lg:contents">
+              {L.chips.map((chip, i) => (
+                <li
+                  key={chip}
+                  className={`chip ${["chip-yellow lg:left-2 lg:top-3", "chip-navy lg:right-0 lg:top-4", "chip-lilac lg:bottom-1 lg:left-0", "chip-mint lg:bottom-3 lg:right-4"][i]} lg:absolute lg:z-10`}
                 >
+                  {chip}
+                </li>
+              ))}
+            </ul>
+            <div className="laptop-screen">
+              <div>
+                <div className="flex items-center justify-between gap-3 border-b border-line px-4 py-2">
+                  <span className="flex items-center gap-2 font-semibold">
+                    <span className="size-2.5 rounded-full bg-accent" aria-hidden="true" />
+                    {L.brand} {L.tutor}
+                  </span>
+                  <Select
+                    aria-label={L.classLabel}
+                    size="sm"
+                    variant="bordered"
+                    selectedKeys={new Set([selectedClass])}
+                    disabledKeys={disabledClasses}
+                    onSelectionChange={(keys) => {
+                      const next = Array.from(keys as Set<string>)[0];
+                      if (next) setGrade(next);
+                    }}
+                    className="w-36"
+                    classNames={{
+                      trigger: "h-11 min-h-11 border border-line shadow-none data-[hover=true]:border-accent-strong",
+                      value: "text-base font-semibold !text-text",
+                      popoverContent: "border border-line bg-surface",
+                    }}
+                  >
+                    {classOptions.map((c) => (
+                      <SelectItem key={c.id} textValue={c.label}>
+                        {c.ready ? c.label : `${c.label} · ${L.soon}`}
+                      </SelectItem>
+                    ))}
+                  </Select>
+                </div>
+                <div id="chat-interface" className="min-h-80 p-4 md:p-5">
                   <ChatAutoMount />
                 </div>
-              </CardBody>
-            </Card>
-          </motion.section>
-        </div>
+              </div>
+            </div>
+            <div className="laptop-base" aria-hidden="true" />
+          </div>
+        </section>
 
-        <ComparisonTable t={L} locale={locale} />
+        <section id="how" className="shell py-16" aria-labelledby="how-title">
+          <h2 id="how-title">{L.howTitle}</h2>
+          <p className="muted mt-2 text-lg">{L.howLead}</p>
+          <ol className="mt-8 grid gap-5 md:grid-cols-3">
+            {L.steps.map((step, i) => (
+              <li key={step.title} className="card p-6">
+                <span className="flex size-10 items-center justify-center rounded-full bg-accent-soft font-bold text-accent-strong" aria-hidden="true">
+                  {num(i + 1)}
+                </span>
+                <h3 className="mt-4">{step.title}</h3>
+                <p className="muted mt-2">{step.text}</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section id="subjects" className="shell py-16" aria-labelledby="subjects-title">
+          <h2 id="subjects-title">{L.subjectsTitle}</h2>
+          <p className="muted mt-2 text-lg">{L.contentsHelp}</p>
+          <ul className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-5">
+            {SUBJECTS.map((s) => {
+              const name = locale === "bn" ? s.name.bn : s.name.en;
+              const status = s.indexed ? classSupport : L.soon;
+              return (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    className="card flex min-h-24 w-full cursor-pointer flex-col items-start justify-between gap-2 p-4 text-start transition-colors hover:border-accent-strong disabled:cursor-not-allowed disabled:bg-transparent disabled:shadow-none disabled:hover:border-line md:p-5"
+                    disabled={!s.indexed}
+                    aria-label={`${name} - ${status}`}
+                    onClick={() => handleSubjectSelect(s)}
+                  >
+                    <span className={`text-lg font-bold ${s.indexed ? "" : "text-muted"}`}>{name}</span>
+                    <span className={`text-sm font-medium ${s.indexed ? "text-accent-strong" : "text-muted"}`}>{status}</span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <h3 className="mt-10">{L.classesTitle}</h3>
+          <ul className="mt-4 grid grid-cols-2 gap-x-6 sm:grid-cols-3 lg:grid-cols-6">
+            {classOptions.map((c) => (
+              <li key={c.id} className="flex items-baseline justify-between gap-2 border-b border-line py-2.5">
+                <span className={c.ready ? "font-semibold" : "text-muted"}>{c.label}</span>
+                <span className={`text-sm ${c.ready ? "font-semibold text-accent-strong" : "text-muted"}`}>
+                  {c.ready ? L.available : L.soon}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section id="limits" className="shell py-16" aria-labelledby="limits-title">
+          <h2 id="limits-title">{L.limitsTitle}</h2>
+          <div className="mt-8 grid gap-5 md:grid-cols-2">
+            {(
+              [
+                [L.canTitle, L.can, true],
+                [L.cannotTitle, L.cannot, false],
+              ] as const
+            ).map(([title, items, ok]) => (
+              <div key={title} className={`card p-6 ${ok ? "" : "bg-transparent shadow-none"}`}>
+                <h3>{title}</h3>
+                <ul className="mt-4 space-y-3">
+                  {items.map((item) => (
+                    <li key={item} className="flex gap-3">
+                      <Mark ok={ok} />
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section id="faq" className="shell py-16" aria-labelledby="faq-title">
+          <h2 id="faq-title">{L.faqTitle}</h2>
+          <div className="mt-8 grid items-start gap-3 md:grid-cols-2">
+            {L.faq.map((item) => (
+              <details key={item.q} className="faq card">
+                <summary>{item.q}</summary>
+                <p>{item.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
       </main>
 
-      <SimpleFooter brand={brand} locale={locale} />
+      <footer className="mt-16 bg-[#06201f] text-[#d6ebe8]">
+        <div className="shell grid gap-10 py-14 md:grid-cols-2 lg:grid-cols-4">
+          <div>
+            <div className="text-xl font-bold text-white">{L.brand}</div>
+            <p className="mt-3 text-sm">{L.footerAbout}</p>
+            <p className="mt-2 text-sm">{L.footer}</p>
+          </div>
+          <div>
+            <h3 className="text-base text-white">{L.footerPages}</h3>
+            <ul className="mt-2 text-sm">
+              {sections.map(([href, label]) => (
+                <li key={href}>
+                  <a href={href} className="inline-flex min-h-11 items-center hover:text-white hover:underline">
+                    {label}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <h3 className="text-base text-white">{L.footerCentres}</h3>
+            <p className="mt-3 text-sm">{L.footerCentresText}</p>
+          </div>
+          <div>
+            <h3 className="text-base text-white">{L.footerProject}</h3>
+            <a href={REPO_URL} className="inline-flex min-h-11 items-center text-sm underline hover:text-white">
+              {L.footerCode}
+            </a>
+            <p className="text-sm">{L.footerBooks}</p>
+          </div>
+        </div>
+        <div className="shell overflow-hidden pb-6">
+          <div className="select-none text-[clamp(3.5rem,15vw,12rem)] font-bold leading-none tracking-tighter text-white" aria-hidden="true">
+            {L.brand}
+          </div>
+          <p className="mt-6 border-t border-white/15 pt-4 text-sm">
+            © {num(new Date().getFullYear())} {L.brand}
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }

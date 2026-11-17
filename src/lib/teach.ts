@@ -42,7 +42,7 @@ const AssistantMessageSchema = z.object({
 
 // Only "user" and "assistant" turns are accepted: a client-supplied "system"
 // turn would let anyone rewrite the tutor's instructions.
-const MessageSchema = z.discriminatedUnion("role", [
+export const MessageSchema = z.discriminatedUnion("role", [
   UserMessageSchema,
   AssistantMessageSchema,
 ]);
@@ -52,23 +52,28 @@ const GradeSchema = z
   .union([z.number(), z.string().regex(/^\d{1,2}$/).transform(Number)])
   .pipe(z.number().int().min(1).max(12));
 
+type Turns = { messages: Array<z.output<typeof MessageSchema>> };
+
+export function endsWithQuestion(body: Turns): boolean {
+  const last = body.messages[body.messages.length - 1];
+  return last?.role === "user" && last.content.length > 0;
+}
+export const LAST_MUST_BE_QUESTION = {
+  message: "The last message must be a non-empty question from the user",
+  path: ["messages"],
+};
+export function trimHistory<T extends Turns>(body: T): T {
+  return { ...body, messages: recentTurns(body.messages.filter((m) => m.content.length > 0)) };
+}
+
 export const TeachRequestSchema = z
   .object({
     messages: z.array(MessageSchema).min(1).max(MAX_MESSAGES),
     grade: GradeSchema,
     language: z.enum(LANGUAGES),
   })
-  .refine(
-    (body) => {
-      const last = body.messages[body.messages.length - 1];
-      return last?.role === "user" && last.content.length > 0;
-    },
-    { message: "The last message must be a non-empty question from the user", path: ["messages"] },
-  )
-  .transform((body) => ({
-    ...body,
-    messages: recentTurns(body.messages.filter((m) => m.content.length > 0)),
-  }));
+  .refine(endsWithQuestion, LAST_MUST_BE_QUESTION)
+  .transform(trimHistory);
 
 export type TeachRequest = z.output<typeof TeachRequestSchema>;
 export type ChatTurn = TeachRequest["messages"][number];
@@ -82,7 +87,7 @@ export function parseTeachRequest(body: unknown) {
  * Bump when buildSystemPrompt changes in a way that changes answers, so the
  * cache stops serving answers written under the old instructions.
  */
-export const PROMPT_VERSION = 3;
+export const PROMPT_VERSION = 4;
 
 export function getCacheKey(input: string, grade: number | string, language: Language): string {
   const normalized = input.toLowerCase().trim().replace(/\s+/g, " ");
@@ -117,6 +122,23 @@ export function stripThinkBlocks(text: string): string {
   const close = out.toLowerCase().lastIndexOf("</think>");
   if (close !== -1) out = out.slice(close + "</think>".length);
   return out.trim();
+}
+
+/**
+ * Remove emoji: pictographs with their variation selectors, skin tones and
+ * ZWJ-joined parts (family and profession sequences), flags (pairs of
+ * regional indicators), and the combining keycap that turns 3 into a boxed
+ * digit. The prompt forbids emoji, but models still add them to young
+ * students' answers. A ZWJ is only removed when it joins pictographs:
+ * Bangla conjuncts use U+200D and U+200C, and digits are not pictographs.
+ */
+export function stripEmoji(text: string): string {
+  return text
+    .replace(
+      /(?:\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*(?:\u200D\p{Extended_Pictographic}[\uFE0F\p{Emoji_Modifier}]*)*|[\u{1F1E6}-\u{1F1FF}]+)[ \t]?/gu,
+      "",
+    )
+    .replace(/[\uFE0F\u20E3]/g, "");
 }
 
 /**
@@ -166,6 +188,7 @@ How to answer:
 - ${young
     ? "The student is young. Use short sentences and everyday words. Use small numbers and familiar things (fruit, pencils, family) as examples. Keep the whole answer under about 120 words. Do not use LaTeX or formal notation."
     : "Match the depth of a Class " + grade + " textbook. Use LaTeX for formulas (for example $F = ma$) when it helps."}
+- Sound like a calm, patient teacher: plain words, short sentences, no cheering or exclamation marks. Never use emoji, emoticons or decorative symbols.
 - If the student only greets you or chats (for example "hi", "hello", "সালাম", "কেমন আছো"), reply warmly in one or two short sentences and ask what they want to learn from their Bangla, English or Math book. Do not teach a lesson, cite a page or give a practice task for a greeting.
 - Teach, do not only tell: show the steps the student should follow, then give the answer clearly at the end.
 - For a math question, solve it step by step and check the result.

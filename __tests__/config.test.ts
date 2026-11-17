@@ -6,7 +6,7 @@ import { createRateLimiter } from "../src/lib/rate-limit";
 describe("service config", () => {
     test("no env vars means no chat provider and no retrieval", () => {
         const config = readServiceConfig({});
-        expect(config).toEqual({ openrouterKey: null, hfKey: null, groqKey: null, store: null, problems: [] });
+        expect(config).toEqual({ openrouterKey: null, hfKey: null, groqKey: null, gateway: false, store: null, problems: [] });
         expect(configStatus(config)).toEqual({ ok: false, chatProviders: 0, textbookRetrieval: false });
     });
 
@@ -26,6 +26,19 @@ describe("service config", () => {
         const urlOnly = readServiceConfig({ SHIKHBO_STORE_URL: "https://p.supabase.co/functions/v1/shikhbo-api" });
         expect(urlOnly.store).toBeNull();
         expect(configStatus(urlOnly).textbookRetrieval).toBe(false);
+        expect(urlOnly.problems.join(" ")).toContain("SHIKHBO_STORE_SECRET is not set");
+
+        const secretOnly = readServiceConfig({ SHIKHBO_STORE_SECRET: "zz-secret-value" });
+        expect(secretOnly.store).toBeNull();
+        expect(secretOnly.problems.join(" ")).toContain("SHIKHBO_STORE_URL is not set");
+        expect(secretOnly.problems.join(" ")).not.toContain("zz-secret-value");
+        expect(readServiceConfig({}).problems).toEqual([]);
+    });
+
+    test("the AI Gateway counts as a chat provider on Vercel or with its key, and nowhere else", () => {
+        expect(configStatus(readServiceConfig({ VERCEL: "1" }))).toEqual({ ok: true, chatProviders: 1, textbookRetrieval: false });
+        expect(readServiceConfig({ AI_GATEWAY_API_KEY: " key " }).gateway).toBe(true);
+        expect(readServiceConfig({ VERCEL: "0", AI_GATEWAY_API_KEY: " " }).gateway).toBe(false);
 
         const full = readServiceConfig({
             SHIKHBO_STORE_URL: "https://p.supabase.co/functions/v1/shikhbo-api",

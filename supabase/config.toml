@@ -1,0 +1,5 @@
+# The shikhbo-api function checks its own shared secret (x-shikhbo-secret),
+# so it must not require a Supabase JWT: `supabase functions deploy` turns
+# verify_jwt back on without this, and every store call then fails with 401.
+[functions.shikhbo-api]
+verify_jwt = false

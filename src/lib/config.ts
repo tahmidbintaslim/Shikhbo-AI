@@ -4,14 +4,20 @@
 
 type Env = Record<string, string | undefined>;
 
-/** The chat provider keys, in the order the tutor tries them. */
-export const CHAT_KEY_NAMES = ["OPENROUTER_API_KEY", "HF_API_KEY", "GROQ_API_KEY"] as const;
+/** The chat provider keys. Any one is enough; on Vercel none is needed (see `gateway`). */
+export const CHAT_KEY_NAMES = ["OPENROUTER_API_KEY", "HF_API_KEY", "GROQ_API_KEY", "AI_GATEWAY_API_KEY"] as const;
 
 export interface ServiceConfig {
   openrouterKey: string | null;
   /** Hugging Face: the second chat provider. */
   hfKey: string | null;
   groqKey: string | null;
+  /**
+   * Vercel AI Gateway is usable: a deployment on Vercel signs in with its
+   * own short-lived token, so no key is stored; elsewhere AI_GATEWAY_API_KEY
+   * is needed. The AI SDK reads either one itself.
+   */
+  gateway: boolean;
   /** The shikhbo-api Edge Function: textbook search, answer cache, shared rate limit. */
   store: { url: string; secret: string } | null;
   /**
@@ -54,11 +60,16 @@ export function readServiceConfig(env: Env = process.env): ServiceConfig {
         "textbook retrieval, answer cache and shared rate limit disabled (not an https URL without credentials), check SHIKHBO_STORE_URL",
       );
     }
+  } else if (storeUrl || storeSecret) {
+    problems.push(
+      `textbook retrieval, answer cache and shared rate limit disabled: ${storeUrl ? "SHIKHBO_STORE_SECRET" : "SHIKHBO_STORE_URL"} is not set (both are needed)`,
+    );
   }
   return {
     openrouterKey: value(env.OPENROUTER_API_KEY),
     hfKey: value(env.HF_API_KEY),
     groqKey: value(env.GROQ_API_KEY),
+    gateway: env.VERCEL === "1" || value(env.AI_GATEWAY_API_KEY) !== null,
     store,
     problems,
   };
@@ -74,7 +85,7 @@ export interface ConfigStatus {
 
 /** What /api/health reports. Never includes a key or URL. */
 export function configStatus(config: ServiceConfig): ConfigStatus {
-  const chatProviders = [config.openrouterKey, config.hfKey, config.groqKey].filter(Boolean).length;
+  const chatProviders = [config.openrouterKey, config.hfKey, config.groqKey, config.gateway].filter(Boolean).length;
   return {
     ok: chatProviders > 0,
     chatProviders,

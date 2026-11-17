@@ -1,183 +1,589 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 
-/* 1. Register HeroUI */
 @plugin "../../hero.ts";
-/* Styles the Markdown answers (`prose` classes in ChatInterface). */
-@plugin "@tailwindcss/typography";
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
-/* 2. Custom Theme Variables */
-@theme {
-  --animate-float: float 6s ease-in-out infinite;
-
-  /* Brand Gradients */
-  --bg-gradient-light:
-    radial-gradient(at 0% 0%, rgba(18, 53, 91, 0.15) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(252, 186, 4, 0.1) 0px, transparent 50%);
-
-  --bg-gradient-dark: linear-gradient(to bottom right, #0f1419, #1a1d2e);
-
-  /* Animations */
-  --animate-fade-in-up: fade-in-up 0.8s ease-out forwards;
-  --animate-pulse-slow: pulse 8s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-
-  /* Fonts */
-  --font-heading:
-    var(--font-outfit), var(--font-hind), ui-sans-serif, system-ui, sans-serif;
-  --font-sans:
-    var(--font-inter), var(--font-noto), ui-sans-serif, system-ui, sans-serif;
-
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-
-  @keyframes fade-in-up {
-    0% {
-      opacity: 0;
-      transform: translateY(20px);
-    }
-    100% {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+/*
+ * Two looks share one set of token names and component classes.
+ *  - Shikhbo AI (the default): mint-to-white page, navy text, teal accent,
+ *    navy pill buttons, soft shadows.
+ *  - Bongo AI (.bongo, set by src/app/c/[slug]/layout.tsx): off-white page,
+ *    near-black text, hairlines, blue pill buttons, pastel cards.
+ * DESIGN.md describes both.
+ */
+:root {
+  --bg: #ffffff;
+  --bg-tint: #e8fcf7;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --line: #d5dbe3;
+  --accent: #00b1b1; /* decoration only: too light for text on white */
+  --accent-strong: #007a7a; /* teal that passes 4.5:1 on white */
+  --accent-soft: #e0f7f5;
+  --primary: #0f172a;
+  --primary-hover: #1e293b;
+  --primary-fg: #ffffff;
+  --danger: #b42318;
+  --shadow: 0 1px 2px rgb(15 23 42 / 0.06), 0 12px 32px -12px rgb(15 23 42 / 0.18);
+  --radius: 1rem;
+  --font-latin: var(--font-dm);
 }
 
-@layer utilities {
-  /* --- SPACING & LAYOUT --- */
-  .glass-p {
-    @apply p-6 md:p-8;
-  }
-
-  .section-spacing {
-    @apply py-16 md:py-24;
-  }
-
-  .glass-grid {
-    @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8;
-  }
-
-  /* --- SURFACES --- */
-  .glass-panel {
-    /* Shared Base Properties */
-    @apply backdrop-blur-xl border transition-all duration-300;
-
-    /* Panel Specifics */
-    @apply shadow-lg;
-    @apply bg-white/5 border-white/40;
-    box-shadow:
-      0 5px 10px rgba(15, 23, 42, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    @apply dark:bg-black/70 dark:border-white/25;
-  }
-
-  .glass-card {
-    /* Shared Base Properties */
-    @apply backdrop-blur-xl border transition-all duration-300;
-
-    /* Card Specifics */
-    @apply shadow-md rounded-medium;
-    @apply bg-white/5 border-white/25;
-    box-shadow:
-      0 5px 10px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    @apply dark:bg-black/70 dark:border-white/25;
-  }
-
-  .glass-card-hover {
-    @apply backdrop-blur-xl border transition-all duration-300 shadow-sm rounded-medium;
-    @apply bg-white/5 border-white/25;
-    box-shadow:
-      0 5px 10px rgba(15, 23, 42, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    @apply dark:bg-black/70 dark:border-white/25;
-    /* Hover Logic */
-    @apply hover:-translate-y-1 hover:shadow-lg cursor-pointer;
-    @apply hover:bg-white/85 hover:border-primary/40;
-    @apply dark:hover:bg-black/75 dark:hover:border-white/40;
-  }
-
-  /* --- INTERACTIVES --- */
-  .glass-btn {
-    @apply backdrop-blur-md border shadow-sm font-medium transition-transform active:scale-95;
-    @apply bg-white/5 border-white/25 text-primary;
-    @apply dark:bg-black/70 dark:border-white/25 dark:text-white;
-  }
-
-  .glass-btn:hover {
-    @apply bg-primary/10 border-primary/50 text-primary;
-    @apply dark:bg-black/80 dark:border-white/40;
-  }
-
-  .glass-btn-primary {
-    @apply backdrop-blur-md border font-medium transition-transform active:scale-95;
-    @apply shadow-md;
-    @apply bg-primary/80 text-white border-transparent;
-    @apply dark:bg-primary/80;
-  }
-
-  .glass-btn-primary:hover {
-    @apply bg-primary text-white shadow-primary/40;
-  }
-
-  /* --- INPUTS --- */
-  .glass-input-wrapper {
-    @apply !bg-white/40 !backdrop-blur-md !border-white/25 !shadow-sm;
-    @apply dark:!bg-black/60 dark:!border-white/25;
-  }
-
-  .group[data-focus="true"] .glass-input-wrapper {
-    @apply !bg-white/80 !border-primary;
-    @apply dark:!bg-black/75 dark:!border-white/40;
-  }
+.bongo {
+  --bg: #f6f6f4;
+  --bg-tint: #f6f6f4;
+  --text: #171717;
+  --muted: #5c5c5c;
+  --line: rgb(23 23 23 / 0.14);
+  --accent: #3d5afe;
+  --accent-strong: #3d5afe;
+  --accent-soft: #e6eaff;
+  --primary: #3d5afe;
+  --primary-hover: #2f48d8;
+  --shadow: 0 1px 2px rgb(23 23 23 / 0.04);
+  --font-latin: var(--font-instrument);
+  /* Pastel card fills. */
+  --pastel-yellow: #ffee99;
+  --pastel-blue: #b8ddfa;
+  --pastel-peach: #ffc4a3;
+  --pastel-lilac: #d9d2ff;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  /* Re-resolved here: an inherited font-family keeps the root's Latin face. */
+  font-family: var(--font-latin), var(--font-hind), system-ui, sans-serif;
 }
 
-/* 3. Base Styles */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-bg-tint: var(--bg-tint);
+  --color-surface: var(--surface);
+  --color-text: var(--text);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-soft: var(--accent-soft);
+  --color-primary: var(--primary);
+  --color-danger: var(--danger);
+  /* Latin face first, so Latin letters and digits use it; Bangla falls
+     through to Hind Siliguri. */
+  --font-sans: var(--font-latin), var(--font-hind), system-ui, sans-serif;
+}
+
 @layer base {
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+    scroll-padding-top: 6rem;
+  }
+
   body {
-    @apply antialiased min-h-screen bg-background text-foreground selection:bg-primary/20 selection:text-primary;
-    @apply font-sans text-base md:text-lg leading-relaxed;
-    background-image: var(--bg-gradient-light);
-    background-attachment: fixed;
+    @apply antialiased min-h-screen font-sans;
+    color: var(--text);
+    background: var(--bg);
+    font-size: 1rem;
+    line-height: 1.65; /* Bangla matras need the room */
+    overflow-x: clip;
   }
 
-  .dark body {
-    background-image: var(--bg-gradient-dark);
+  ::selection {
+    background: var(--accent-soft);
   }
 
-  /* Typography Defaults */
   h1,
   h2,
-  h3,
-  h4,
-  h5,
-  h6 {
-    @apply font-heading text-foreground tracking-tight;
+  h3 {
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
   }
 
   h1 {
-    @apply text-5xl md:text-7xl lg:text-8xl font-black;
-    line-height: 1.1;
-  }
-  h2 {
-    @apply text-4xl md:text-5xl lg:text-6xl font-extrabold;
-    line-height: 1.15;
-  }
-  h3 {
-    @apply text-2xl md:text-3xl font-bold;
-  }
-  h4 {
-    @apply text-xl md:text-2xl font-bold;
+    font-size: clamp(2.25rem, 5.2vw, 3.625rem);
+    line-height: 1.2;
   }
 
-  p {
-    @apply text-default-600 dark:text-default-400;
+  h2 {
+    font-size: clamp(1.625rem, 3.4vw, 2.25rem);
+    line-height: 1.25;
   }
+
+  h3 {
+    font-size: 1.125rem;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Page column. 16px gutters on phones. */
+  .shell {
+    width: 100%;
+    max-width: 80rem;
+    margin-inline: auto;
+    padding-inline: 1rem;
+  }
+  @media (min-width: 48rem) {
+    .shell {
+      padding-inline: 2rem;
+    }
+  }
+  .bongo .shell {
+    max-width: 71rem;
+  }
+  .shell.shell-narrow {
+    max-width: 44rem;
+  }
+
+  .muted {
+    color: var(--muted);
+  }
+  .small {
+    font-size: 0.875rem;
+    color: var(--muted);
+  }
+
+  /* The Shikhbo home page: mint glow fading to white. */
+  .mint {
+    background:
+      radial-gradient(60rem 32rem at 70% 12rem, rgb(0 177 177 / 0.14), transparent 70%),
+      linear-gradient(to bottom, var(--bg-tint), #f3fdfb 40rem, var(--bg) 80rem);
+  }
+
+  .gradient-text {
+    background: linear-gradient(90deg, #009494, #0f3d4a);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Buttons: 44px tall pills. */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0.5rem 1.125rem;
+    border: 1px solid transparent;
+    border-radius: 0.625rem;
+    font-weight: 600;
+    line-height: 1.3;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      background-color 160ms ease-out,
+      border-color 160ms ease-out,
+      transform 80ms ease-out;
+  }
+  .bongo .btn {
+    border-radius: 999px;
+    padding-inline: 1.5rem;
+  }
+  .btn:active {
+    transform: translateY(1px);
+  }
+  .btn:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+  .btn-primary {
+    background: var(--primary);
+    color: var(--primary-fg);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--primary-hover);
+  }
+  .btn-black {
+    background: #000;
+    color: #fff;
+  }
+  .btn-black:hover {
+    background: #1e293b;
+  }
+  .btn-outline {
+    background: var(--surface);
+    border-color: var(--accent-strong);
+    color: var(--accent-strong);
+  }
+  .bongo .btn-outline {
+    border-color: var(--line);
+    color: var(--text);
+  }
+  .btn-outline:hover:not(:disabled) {
+    background: var(--accent-soft);
+  }
+  .btn-lg {
+    min-height: 3.5rem;
+    padding-inline: 1.5rem;
+    border-radius: 1rem;
+    font-size: 1.0625rem;
+  }
+  .bongo .btn-lg {
+    border-radius: 999px;
+    padding-inline: 1.75rem;
+  }
+
+  /* Text you tap. The padding keeps a 44px target. */
+  .link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    min-height: 2.75rem;
+    color: var(--text);
+    font-weight: 600;
+    text-align: start;
+    cursor: pointer;
+  }
+  .link:hover:not(:disabled) {
+    color: var(--accent-strong);
+  }
+  .link:disabled {
+    color: var(--muted);
+    cursor: not-allowed;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid rgb(0 177 177 / 0.45);
+    border-radius: 999px;
+    background: rgb(0 177 177 / 0.1);
+    font-size: 0.875rem;
+    font-weight: 500;
+  }
+  .bongo .pill {
+    padding: 0.625rem 1rem;
+    border-color: var(--line);
+    background: transparent;
+  }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
+    box-shadow: var(--shadow);
+  }
+
+  .hairline {
+    border-top: 1px solid var(--line);
+  }
+
+  /* Small-caps section label, as on the Bongo reference. */
+  .eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* Rows separated by hairlines: lists on the dashboard. */
+  .rows > * {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.25rem;
+    padding-block: 0.5rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .rows > :first-child {
+    border-top: 1px solid var(--line);
+  }
+
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 2.75rem;
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--line);
+    border-radius: 0.75rem;
+    background: var(--surface);
+    color: var(--text);
+    font: inherit;
+    resize: none;
+    field-sizing: content;
+  }
+  .field::placeholder {
+    color: var(--muted);
+    opacity: 1;
+  }
+  .field:focus-visible {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 0;
+    border-color: var(--accent-strong);
+  }
+  .field[aria-invalid="true"] {
+    border-color: var(--danger);
+  }
+
+  .label {
+    display: block;
+    margin-bottom: 0.375rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+
+  .error {
+    color: var(--danger);
+    font-weight: 500;
+  }
+
+  /* Chat. */
+  .bubble {
+    max-width: 85%;
+    margin-left: auto;
+    padding: 0.625rem 1rem;
+    border-radius: 1rem 1rem 0.25rem 1rem;
+    background: var(--primary);
+    color: var(--primary-fg);
+    overflow-wrap: anywhere;
+  }
+  .starter {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    padding: 0.375rem 0.875rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-align: start;
+    cursor: pointer;
+  }
+  .starter:hover {
+    border-color: var(--accent-strong);
+    background: var(--accent-soft);
+  }
+
+  /* Where the answer came from: always shown when the API sends a source. */
+  .source {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    margin-top: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    color: var(--accent-strong);
+    font-size: 0.875rem;
+    font-weight: 600;
+  }
+  .source svg {
+    width: 0.875rem;
+    flex: none;
+  }
+
+  /* A worked answer in Markdown. */
+  .prose-answer {
+    overflow-wrap: anywhere;
+  }
+  .prose-answer > * + * {
+    margin-top: 0.625rem;
+  }
+  .prose-answer :is(h1, h2, h3, h4) {
+    font-size: 1.0625rem;
+    font-weight: 700;
+    line-height: 1.5;
+    letter-spacing: 0;
+  }
+  .prose-answer :is(ul, ol) {
+    padding-left: 1.5rem;
+  }
+  .prose-answer ul {
+    list-style: disc;
+  }
+  .prose-answer ol {
+    list-style: decimal;
+  }
+  .prose-answer li + li {
+    margin-top: 0.25rem;
+  }
+  .prose-answer a {
+    color: var(--accent-strong);
+    text-decoration: underline;
+  }
+  .prose-answer code {
+    font-size: 0.9em;
+    padding: 0.1em 0.3em;
+    border-radius: 0.25rem;
+    background: var(--accent-soft);
+  }
+  .prose-answer pre {
+    overflow-x: auto;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  .prose-answer pre code {
+    padding: 0;
+    background: none;
+  }
+  .prose-answer table {
+    border-collapse: collapse;
+  }
+  .prose-answer :is(th, td) {
+    padding: 0.375rem 0.75rem;
+    border: 1px solid var(--line);
+    text-align: start;
+  }
+  .prose-answer .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  /* The laptop the home page's chat sits in: a dark bezel and a base. */
+  .laptop-screen {
+    padding: 0.5rem;
+    border-radius: 1.25rem;
+    background: #0f172a;
+    box-shadow: 0 30px 60px -24px rgb(15 23 42 / 0.45);
+  }
+  .laptop-screen > div {
+    border-radius: 0.875rem;
+    background: var(--surface);
+  }
+  .laptop-base {
+    height: 0.75rem;
+    margin-inline: -3%;
+    border-radius: 0 0 1rem 1rem;
+    background: linear-gradient(to bottom, #cbd5e1, #94a3b8);
+  }
+
+  /* Labelled chips floating round the laptop. */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.375rem 0.875rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    box-shadow: 0 6px 16px -6px rgb(15 23 42 / 0.3);
+    white-space: nowrap;
+  }
+  .chip-yellow {
+    background: #fbeeb0;
+    color: #3b2f00;
+  }
+  .chip-navy {
+    background: #2e1f6b;
+    color: #fff;
+  }
+  .chip-lilac {
+    background: #ddd3fb;
+    color: #2e1f6b;
+  }
+  .chip-mint {
+    background: #c9f3e6;
+    color: #064e43;
+  }
+
+  /* The phone on the Bongo join page. */
+  .phone {
+    width: 17rem;
+    padding: 0.5rem;
+    border-radius: 2.5rem;
+    background: #171717;
+    box-shadow: 0 24px 48px -20px rgb(23 23 23 / 0.4);
+  }
+  .phone > div {
+    min-height: 31rem;
+    border-radius: 2rem;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .faq summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    min-height: 3.5rem;
+    padding: 0.75rem 1.25rem;
+    font-weight: 600;
+    cursor: pointer;
+    list-style: none;
+  }
+  .faq summary::-webkit-details-marker {
+    display: none;
+  }
+  .faq summary::after {
+    content: "+";
+    font-size: 1.5rem;
+    font-weight: 400;
+    line-height: 1;
+    color: var(--muted);
+  }
+  .faq[open] summary::after {
+    content: "\2212";
+  }
+  .faq p {
+    padding: 0 1.25rem 1.25rem;
+    color: var(--muted);
+  }
+
+  .file input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+  }
+  .file:focus-within {
+    outline: 2px solid var(--accent-strong);
+    outline-offset: 2px;
+  }
+
+  .dots::after {
+    content: "...";
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise {
+    animation: rise 320ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .dots::after {
+    animation: dots 1.2s steps(4, jump-none) infinite;
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes dots {
+  to {
+    width: 1.2em;
+  }
+}
+
+/* In the laptop the conversation scrolls inside the screen. */
+.laptop-screen #chat-messages {
+  max-height: 26rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }

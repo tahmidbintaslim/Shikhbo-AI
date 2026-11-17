@@ -7,8 +7,9 @@ import { NextResponse } from "next/server";
 import { CHAT_KEY_NAMES, createOptional, readServiceConfig } from "@/lib/config";
 import { getModelConfig } from "@/lib/models";
 import { createRateLimiter } from "@/lib/rate-limit";
-import { retrieveContext } from "@/lib/retrieval";
-import { createStore } from "@/lib/store";
+import { buildCentrePrompt, parseCentreRequest, splitCoverage } from "@/lib/centre";
+import { RETRIEVAL_TOP_K, citedSource, formatContext, retrieveContext } from "@/lib/retrieval";
+import { StoreError, createStore, type TextbookMatch } from "@/lib/store";
 import {
   buildSystemPrompt,
   errorSummary,
@@ -16,6 +17,7 @@ import {
   getClientIp,
   hashKey,
   parseTeachRequest,
+  stripEmoji,
   stripThinkBlocks,
   type ChatTurn,
 } from "@/lib/teach";
@@ -79,9 +81,27 @@ const groq = groqKey
     ? createOptional("Groq", "GROQ_API_KEY", () => createGroq({ apiKey: groqKey }))
     : null;
 
-const CHAT_CONFIGURED = Boolean(openrouter || hf || groq);
+const CHAT_CONFIGURED = Boolean(openrouter || hf || groq || config.gateway);
 if (!CHAT_CONFIGURED) {
     console.error(`[config] no chat provider is configured: set at least one of ${CHAT_KEY_NAMES.join(", ")}`);
+}
+
+/**
+ * A cached answer is the JSON body that was sent ({ result, source? }), so a
+ * repeated question keeps its page reference. An entry written before that
+ * is the plain answer text.
+ */
+function fromCache(cached: string): { result: string; source?: string } {
+    try {
+        const body: unknown = JSON.parse(cached);
+        if (body && typeof body === "object" && typeof (body as { result?: unknown }).result === "string") {
+            const { result, source } = body as { result: string; source?: unknown };
+            return typeof source === "string" ? { result, source } : { result };
+        }
+    } catch {
+        // Plain text from before the cache held JSON.
+    }
+    return { result: cached };
 }
 
 /** Error bodies carry a stable `code` so the UI can show its own wording. */
@@ -123,9 +143,17 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
             },
         });
     }
+    if (config.gateway) {
+        // A plain "creator/model" string is routed through Vercel AI Gateway.
+        // Last, because it is the only provider billed per token.
+        providers.push({
+            name: "gateway",
+            run: async () => (await generateText({ model: models.gateway, system, messages })).text,
+        });
+    }
     for (const provider of providers) {
         try {
-            const text = stripThinkBlocks((await provider.run()) ?? "");
+            const text = stripEmoji(stripThinkBlocks((await provider.run()) ?? ""));
             if (text) return text;
             console.warn(`[teach] ${provider.name} returned an empty answer`);
         } catch (err) {
@@ -135,9 +163,82 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
     return null;
 }
 
+/** A random id the centre page makes once per browser (crypto.randomUUID). */
+const STUDENT_ID = /^[A-Za-z0-9-]{8,64}$/;
+
+const NOT_IN_NOTES_REPLY = {
+    bengali: "এটি তোমার কোচিংয়ের নোটে এখনো নেই। তোমার শিক্ষককে জিজ্ঞেস করো।",
+    english: "This is not in your centre's notes yet. Please ask your teacher.",
+};
+
+/**
+ * A centre student's question: answered only from that centre's notes, then
+ * logged for the owner's dashboard. Without the notes there is nothing to
+ * answer from, so a store failure is an error here, not a degraded answer.
+ */
+async function centreAnswer(body: unknown, student: string) {
+    const parsed = parseCentreRequest(body);
+    if (!parsed.success) {
+        return errorResponse(400, "invalid_input", "Invalid input");
+    }
+    if (!store) {
+        return errorResponse(503, "not_configured", "Centre tutors are not set up on this server: the store is not configured.");
+    }
+    const { messages, language, centre } = parsed.data;
+    const question = messages[messages.length - 1]?.content ?? "";
+
+    let found: Awaited<ReturnType<typeof store.centreMatch>>;
+    try {
+        found = await store.centreMatch(centre.slug, centre.code, question, RETRIEVAL_TOP_K);
+    } catch (err) {
+        if (err instanceof StoreError && err.status === 401) {
+            return errorResponse(401, "wrong_code", "Wrong join code");
+        }
+        console.warn(`[teach] centre notes search failed: ${errorSummary(err)}`);
+        return errorResponse(503, "providers_unavailable", "The notes could not be searched. Please try again in a minute.", {
+            "Retry-After": "60",
+        });
+    }
+
+    const answer = await generateAnswer(buildCentrePrompt(found.name, language, formatContext(found.matches)), messages);
+    if (!answer) {
+        return errorResponse(
+            503,
+            "providers_unavailable",
+            "None of the AI providers returned an answer. Please try again in a minute.",
+            { "Retry-After": "60" },
+        );
+    }
+    const { text, covered } = splitCoverage(answer);
+
+    // The nearest note, when the notes covered the question: logged for the
+    // owner and shown to the student beside the answer.
+    const source = covered ? (found.matches[0]?.source ?? null) : null;
+
+    // shortcut: a greeting counts as a covered question about the nearest
+    // note; add a second marker for small talk if it clutters the dashboard.
+    try {
+        await store.centreLog(centre.slug, centre.code, student, question, source);
+    } catch (err) {
+        console.warn(`[teach] centre question not logged: ${errorSummary(err)}`);
+    }
+    return NextResponse.json({ result: text || NOT_IN_NOTES_REPLY[language], ...(source ? { source } : {}) });
+}
+
 export async function POST(req: Request) {
     try {
-        if (!(await rateLimiter.allow(hashKey(getClientIp(req.headers))))) {
+        // Centre students often share one address (a classroom, a mobile
+        // carrier's NAT), so they are counted per browser as well. The header
+        // only changes the key for centre requests (see below), so it cannot
+        // be used to get around the per-address limit on the open tutor.
+        // shortcut: a student with the join code can rotate this id to get a
+        // fresh budget; add a per-centre daily cap when a centre is abused.
+        const student = req.headers.get("x-centre-student");
+        if (student !== null && !STUDENT_ID.test(student)) {
+            return errorResponse(400, "invalid_input", "Invalid input");
+        }
+        const ip = getClientIp(req.headers);
+        if (!(await rateLimiter.allow(hashKey(student ? `${ip}:${student}` : ip)))) {
             return errorResponse(429, "rate_limited", "Rate limit exceeded. Please try again later.", {
                 "Retry-After": "60",
             });
@@ -164,6 +265,10 @@ export async function POST(req: Request) {
             return errorResponse(400, "invalid_input", "Invalid input");
         }
 
+        if (student !== null) {
+            return await centreAnswer(body, hashKey(student));
+        }
+
         const parsed = parseTeachRequest(body);
         if (!parsed.success) {
             return errorResponse(400, "invalid_input", "Invalid input");
@@ -174,15 +279,16 @@ export async function POST(req: Request) {
         const cacheKey = getCacheKey(question, grade, language);
         const cachedResponse = await getCachedResponse(cacheKey);
         if (cachedResponse) {
-            return NextResponse.json({ result: cachedResponse });
+            return NextResponse.json(fromCache(cachedResponse));
         }
 
         // ---------------------------------------------------------
         // RETRIEVAL (RAG). Failures and timeouts degrade to no context.
         // ---------------------------------------------------------
+        let matches: TextbookMatch[] = [];
         const contextText = store
             ? await retrieveContext({ query: question, grade, language }, {
-                search: (query, g, medium, topK, signal) => store.match(query, g, medium, topK, signal),
+                search: async (query, g, medium, topK, signal) => (matches = await store.match(query, g, medium, topK, signal)),
             })
             : "";
 
@@ -196,8 +302,10 @@ export async function POST(req: Request) {
             );
         }
 
-        await setCachedResponse(cacheKey, result);
-        return NextResponse.json({ result });
+        const source = citedSource(result, matches, language);
+        const answer = { result, ...(source ? { source } : {}) };
+        await setCachedResponse(cacheKey, JSON.stringify(answer));
+        return NextResponse.json(answer);
     } catch (error) {
         console.error(`[teach] request failed: ${errorSummary(error)}`);
         return errorResponse(500, "internal_error", "Failed to process request");
