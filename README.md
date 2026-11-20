@@ -18,7 +18,7 @@ Screenshot from a local production build (`npm run build && npm start`), 1280 x 
 
 - Ask a question in a chat box. Pick the class (1 to 12) and the medium (Bangla or English). The page, chat box included, switches between Bangla (the default) and English.
 - Textbook lookup (RAG): the question is matched against OCR'd pages of NCTB textbooks stored in Supabase Postgres with pgvector, filtered by class and medium, and the best pages go to the model as context.
-- Four chat providers tried in order (Groq, OpenRouter, Hugging Face Inference Providers, then the paid Vercel AI Gateway under a daily cap), so one provider being down or out of free quota does not stop answers.
+- Five chat providers tried in order: the free `bangla-ai-engine` Worker (Cloudflare Workers AI, Llama 3.3 70B, see `engine/`), Groq, OpenRouter, Hugging Face Inference Providers, then the paid Vercel AI Gateway under a daily cap. One provider being down or out of free quota does not stop answers.
 - Answers render as Markdown (headings, numbered and bulleted lists, code) with KaTeX math. The conversation stays in the browser and can be exported as a text file.
 - Per-IP rate limit and a 5-minute answer cache, both in Supabase (in memory for local work without it).
 - Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a store URL that is not a plain `https://` URL turns the store off (and `/api/health` reports it) and logs which variable to fix.
@@ -44,7 +44,7 @@ flowchart LR
   R --> L{Rate limit<br/>Supabase or memory}
   L --> V[zod validation]
   V --> C{Answer cache<br/>5 min}
-  C -->|miss| E[shikhbo-api Edge Function<br/>embeds with gte-small]
+  C -->|miss| E[shikhbo-api Edge Function<br/>embeds with bge-m3]
   E --> Q[(Supabase pgvector<br/>NCTB pages)]
   Q --> P[Prompt with<br/>textbook context]
   P --> G[Groq]
@@ -59,8 +59,8 @@ The app is a single Next.js 16 page plus `POST /api/teach` and `GET /api/health`
 2. **Configuration check.** If no chat provider key is set, the route stops here with `503 not_configured`.
 3. **Validation.** A zod schema accepts `user` and `assistant` turns only, keeps the last 10, requires an integer class from 1 to 12 and a medium of `english` or `bengali`, and caps lengths. HTML tags are stripped from questions.
 4. **Answer cache.** An exact-match cache for 5 minutes, keyed on class, medium and a SHA-256 hash of the latest question. It uses Supabase when the store is configured, otherwise server memory.
-5. **Retrieval.** The question goes to the `shikhbo-api` Supabase Edge Function, which embeds it with Supabase's built-in `gte-small` model (384 dimensions) and returns the 5 nearest pages for the class and medium from pgvector. If the call fails or takes more than 5 seconds, the tutor answers without textbook context instead of failing.
-6. **Generation.** Providers are tried in order: Groq, OpenRouter, Hugging Face Inference Providers, Vercel AI Gateway. The gateway is billed per token, so it answers at most `GATEWAY_DAILY_LIMIT` questions a day (default 2000, about US$4 at typical answer lengths), counted in the store; with no store, or when the counter cannot be reached, it is skipped. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned. If every provider fails, the route answers `503 providers_unavailable`.
+5. **Retrieval.** The question goes to the `shikhbo-api` Supabase Edge Function, which embeds it with `bge-m3` (1024 dimensions, multilingual, from the `bangla-ai-engine` Worker) and returns the 5 best pages for the class and medium, ranking by meaning and by shared words together. If the call fails or takes more than 5 seconds, the tutor answers without textbook context instead of failing.
+6. **Generation.** Providers are tried in order: the free engine (`ENGINE_URL` + `ENGINE_SECRET`), Groq, OpenRouter, Hugging Face Inference Providers, Vercel AI Gateway. The gateway is billed per token, so it answers at most `GATEWAY_DAILY_LIMIT` questions a day (default 2000, about US$4 at typical answer lengths), counted in the store; with no store, or when the counter cannot be reached, it is skipped. The first non-empty answer wins. `<think>...</think>` reasoning blocks are removed before the answer is returned. If every provider fails, the route answers `503 providers_unavailable`.
 
 Every error body has the shape `{ "error": "...", "code": "..." }`. The codes are `rate_limited` (429), `not_configured` (503), `too_large` (413), `invalid_input` (400), `providers_unavailable` (503) and `internal_error` (500). The chat shows its own Bangla or English message for `rate_limited`, `not_configured` and `providers_unavailable`, and a generic error message for the rest.
 
@@ -113,6 +113,7 @@ Set these in `.env.local` for local work, or in your host's settings. `.env.exam
 | `OPENROUTER_MODEL` | Optional | Default `google/gemma-4-31b-it:free` |
 | `HF_CHAT_MODEL` | Optional | Default `google/gemma-4-26B-A4B-it` |
 | `GROQ_MODEL` | Optional | Default `openai/gpt-oss-120b` |
+| `ENGINE_URL`, `ENGINE_SECRET` | Chat, first and free | The `bangla-ai-engine` Cloudflare Worker (`engine/README.md`) |
 | `AI_GATEWAY_API_KEY` | Chat, last resort | Vercel AI Gateway, billed per token. Not needed on Vercel: a deployment there signs in with its own token, so the tutor answers with no chat key set |
 | `GATEWAY_MODEL` | Optional | Default `google/gemini-2.5-flash` |
 | `GATEWAY_DAILY_LIMIT` | Optional | Paid gateway answers per day, default `2000`. Needs the store |
@@ -142,7 +143,7 @@ The textbooks are not stored in this repository. `books/sources.json` lists each
    bun scripts/ingest.ts
    ```
 
-The script OCRs every page with Tesseract (`ben` for `books/bengali/`, `eng` for `books/english/`), skips near-empty pages, and sends each page with its class, medium and source to the Edge Function, which embeds it with `gte-small` and upserts it. The class comes from the file name ("Class 1") and the medium from the folder. tesseract.js downloads its language data on the first run. OCR runs one page at a time, so a full run is slow.
+The script OCRs every page with Tesseract (`ben` for `books/bengali/`, `eng` for `books/english/`), skips near-empty pages, and sends each page with its class, medium and source to the Edge Function, which embeds it with `bge-m3` (and `gte-small` for the old column) and upserts it. The class comes from the file name ("Class 1") and the medium from the folder. tesseract.js downloads its language data on the first run. OCR runs one page at a time, so a full run is slow.
 
 ## Scripts
 

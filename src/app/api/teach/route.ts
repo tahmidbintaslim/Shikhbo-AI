@@ -6,6 +6,7 @@ import { generateText } from "ai";
 import { NextResponse } from "next/server";
 import { CHAT_KEY_NAMES, createOptional, readServiceConfig } from "@/lib/config";
 import { getModelConfig } from "@/lib/models";
+import { engineChat } from "@/lib/engine";
 import { allowGatewayAnswer, createRateLimiter, GATEWAY_DAILY_LIMIT } from "@/lib/rate-limit";
 import { buildCentrePrompt, parseCentreRequest, splitCoverage } from "@/lib/centre";
 import { RETRIEVAL_TOP_K, citedSource, formatContext, retrieveContext } from "@/lib/retrieval";
@@ -82,7 +83,7 @@ const groq = groqKey
     ? createOptional("Groq", "GROQ_API_KEY", () => createGroq({ apiKey: groqKey }))
     : null;
 
-const CHAT_CONFIGURED = Boolean(openrouter || hf || groq || config.gateway);
+const CHAT_CONFIGURED = Boolean(config.engine || openrouter || hf || groq || config.gateway);
 if (!CHAT_CONFIGURED) {
     console.error(`[config] no chat provider is configured: set at least one of ${CHAT_KEY_NAMES.join(", ")}`);
 }
@@ -118,6 +119,11 @@ export const maxDuration = 45; // Allow time for fallbacks
 async function generateAnswer(system: string, messages: ChatTurn[]): Promise<string | null> {
     const providers: Array<{ name: string; run: () => Promise<string | null | undefined> }> = [];
 
+    if (config.engine) {
+        // Free Cloudflare Workers AI (Llama 3.3 70B) behind the bangla-ai-engine Worker; first, since it costs nothing.
+        const engine = config.engine;
+        providers.push({ name: "engine", run: () => engineChat(engine, system, messages) });
+    }
     if (groq) {
         providers.push({
             name: "groq",

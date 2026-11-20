@@ -2,11 +2,11 @@
 //
 // Every request needs the server secret in `x-shikhbo-secret`; Postgres
 // checks it against the stored SHA-256 (shikhbo.check_secret), so this
-// function holds no copy of it. Embeddings are made here with Supabase's
-// built-in gte-small model (384 dimensions, mean-pooled and normalized), the
-// same model for ingested pages and for questions. Searches also rank by
-// shared words (migration 20261117000000_hybrid_search.sql), since gte-small
-// is English-only.
+// function holds no copy of it. Searches use bge-m3 (1024 dimensions,
+// multilingual, so Bangla questions match) from the bangla-ai-engine Worker,
+// fused with shared-word ranking (migrations 20261117000000, 20261120000000).
+// gte-small (384 dimensions) is still written to the old NOT NULL column for
+// rollback; nothing reads it any more.
 //
 // POST JSON, one of:
 //   { "op": "match", "query": string, "grade": 1-12, "medium": "english"|"bengali", "count"?: 1-20 }
@@ -28,6 +28,9 @@
 //
 // Bongo landing page:
 //   { "op": "pilot_request", "name", "centre", "phone", "city"?, "students"? } -> { "ok": true }
+//
+// Maintenance:
+//   { "op": "reindex_m3", "limit"?: 1-300 } -> { "embedded": n, "remaining": n }  (fills missing bge-m3 vectors)
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import postgres from "https://deno.land/x/postgresjs@v3.4.5/mod.js";
 
@@ -74,6 +77,19 @@ async function embed(text: string): Promise<string> {
   return `[${vector.join(",")}]`;
 }
 
+let engine: { url: string; secret: string } | null = null;
+/** bge-m3 vectors from the bangla-ai-engine Worker, as pgvector literals. */
+async function embedM3(texts: string[]): Promise<string[]> {
+  if (!engine) [engine] = await sql`select url, secret from shikhbo.engine_config`;
+  const res = await fetch(`${engine!.url}/embed`, {
+    method: "POST",
+    headers: { authorization: `Bearer ${engine!.secret}`, "content-type": "application/json" },
+    body: JSON.stringify({ texts: texts.map((t) => t.slice(0, 8000)) }),
+  });
+  if (!res.ok) throw new Error(`engine ${res.status}`);
+  return ((await res.json()).vectors as number[][]).map((v) => `[${v.join(",")}]`);
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
@@ -99,11 +115,11 @@ Deno.serve(async (req) => {
     switch (body.op) {
       case "match": {
         const query = str(body.query, "query", 2_000);
-        const vector = await embed(query);
-        // Meaning (gte-small) and shared words fused, so Bangla questions match too.
+        const [vector] = await embedM3([query]);
+        // Meaning (bge-m3) and shared words fused.
         const rows = await sql`
           select source, text, similarity
-          from shikhbo.match_pages_hybrid(${vector}::extensions.vector, ${query}, ${int(body.grade, "grade", 1, 12)},
+          from shikhbo.match_pages_m3(${vector}::extensions.vector, ${query}, ${int(body.grade, "grade", 1, 12)},
             ${medium(body.medium)}, ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
         return json({ matches: rows });
       }
@@ -128,10 +144,13 @@ Deno.serve(async (req) => {
       }
       case "upsert_page": {
         const text = str(body.text, "text");
+        const id = str(body.id, "id", 300);
         const vector = await embed(text);
-        await sql`select shikhbo.upsert_page(${secret}, ${str(body.id, "id", 300)},
+        const [m3] = await embedM3([text]);
+        await sql`select shikhbo.upsert_page(${secret}, ${id},
           ${int(body.grade, "grade", 1, 12)}, ${medium(body.medium)}, ${str(body.source, "source", 300)},
           ${text}, ${vector}::extensions.vector)`;
+        await sql`update shikhbo.textbook_pages set embedding_m3 = ${m3}::extensions.vector where id = ${id}`;
         return json({ ok: true });
       }
       case "centre_create": {
@@ -149,11 +168,11 @@ Deno.serve(async (req) => {
         const centre = slug(body.centre);
         await sql`select shikhbo.check_centre_code(${centre}, ${code(body.code)}, false)`;
         const query = str(body.query, "query", 2_000);
-        const vector = await embed(query);
+        const [vector] = await embedM3([query]);
         const [info] = await sql`select name from shikhbo.centres where slug = ${centre}`;
         const rows = await sql`
           select source, text, similarity
-          from shikhbo.match_centre_notes(${centre}, ${vector}::extensions.vector, ${query},
+          from shikhbo.match_centre_notes_m3(${centre}, ${vector}::extensions.vector, ${query},
             ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
         return json({ name: info?.name ?? centre, matches: rows });
       }
@@ -197,11 +216,13 @@ Deno.serve(async (req) => {
         // Embed before the transaction, so a slow model call holds no locks.
         const vectors: string[] = [];
         for (const chunk of chunks) vectors.push(await embed(chunk));
+        const m3 = chunks.length ? await embedM3(chunks) : [];
         await sql.begin(async (tx) => {
           await tx`delete from shikhbo.centre_notes where centre = ${centre} and title = ${title}`;
           for (let i = 0; i < chunks.length; i++) {
-            await tx`insert into shikhbo.centre_notes (centre, title, part, text, embedding)
-              values (${centre}, ${title}, ${i + 1}, ${chunks[i]}, ${vectors[i]}::extensions.vector)`;
+            await tx`insert into shikhbo.centre_notes (centre, title, part, text, embedding, embedding_m3)
+              values (${centre}, ${title}, ${i + 1}, ${chunks[i]}, ${vectors[i]}::extensions.vector,
+                ${m3[i]}::extensions.vector)`;
           }
         });
         return json({ ok: true });
@@ -214,6 +235,26 @@ Deno.serve(async (req) => {
           values (${str(body.name, "name", 80)}, ${str(body.centre, "centre", 120)}, ${phone},
             ${opt(body.city, "city", 80)}, ${opt(body.students, "students", 20)})`;
         return json({ ok: true });
+      }
+      case "reindex_m3": {
+        const limit = body.limit === undefined ? 100 : int(body.limit, "limit", 1, 300);
+        const pages = await sql`select id, text from shikhbo.textbook_pages where embedding_m3 is null order by id limit ${limit}`;
+        for (let i = 0; i < pages.length; i += 50) {
+          const batch = pages.slice(i, i + 50);
+          const vectors = await embedM3(batch.map((r: { text: string }) => r.text));
+          await sql`update shikhbo.textbook_pages p set embedding_m3 = v.e::extensions.vector
+            from (select unnest(${batch.map((r: { id: string }) => r.id)}::text[]) as id, unnest(${vectors}::text[]) as e) v
+            where p.id = v.id`;
+        }
+        const notes = await sql`select centre, title, part, text from shikhbo.centre_notes where embedding_m3 is null limit ${limit}`;
+        for (const n of notes) {
+          const [v] = await embedM3([n.text]);
+          await sql`update shikhbo.centre_notes set embedding_m3 = ${v}::extensions.vector
+            where centre = ${n.centre} and title = ${n.title} and part = ${n.part}`;
+        }
+        const [left] = await sql`select (select count(*) from shikhbo.textbook_pages where embedding_m3 is null)
+          + (select count(*) from shikhbo.centre_notes where embedding_m3 is null) as n`;
+        return json({ embedded: pages.length + notes.length, remaining: Number(left.n) });
       }
       default:
         return json({ error: "unknown op" }, 400);

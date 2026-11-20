@@ -5,9 +5,11 @@
 type Env = Record<string, string | undefined>;
 
 /** The chat provider keys. Any one is enough; on Vercel none is needed (see `gateway`). */
-export const CHAT_KEY_NAMES = ["OPENROUTER_API_KEY", "HF_API_KEY", "GROQ_API_KEY", "AI_GATEWAY_API_KEY"] as const;
+export const CHAT_KEY_NAMES = ["ENGINE_SECRET", "OPENROUTER_API_KEY", "HF_API_KEY", "GROQ_API_KEY", "AI_GATEWAY_API_KEY"] as const;
 
 export interface ServiceConfig {
+  /** bangla-ai-engine Worker (Cloudflare Workers AI, free tier): the first chat provider. */
+  engine: { url: string; secret: string } | null;
   openrouterKey: string | null;
   /** Hugging Face: the second chat provider. */
   hfKey: string | null;
@@ -65,7 +67,17 @@ export function readServiceConfig(env: Env = process.env): ServiceConfig {
       `textbook retrieval, answer cache and shared rate limit disabled: ${storeUrl ? "SHIKHBO_STORE_SECRET" : "SHIKHBO_STORE_URL"} is not set (both are needed)`,
     );
   }
+  const engineUrl = value(env.ENGINE_URL);
+  const engineSecret = value(env.ENGINE_SECRET);
+  let engine: ServiceConfig["engine"] = null;
+  if (engineUrl && engineSecret) {
+    if (isRestUrl(engineUrl)) engine = { url: engineUrl.replace(/\/+$/, ""), secret: engineSecret };
+    else problems.push("free engine disabled (not an https URL without credentials), check ENGINE_URL");
+  } else if (engineUrl || engineSecret) {
+    problems.push(`free engine disabled: ${engineUrl ? "ENGINE_SECRET" : "ENGINE_URL"} is not set (both are needed)`);
+  }
   return {
+    engine,
     openrouterKey: value(env.OPENROUTER_API_KEY),
     hfKey: value(env.HF_API_KEY),
     groqKey: value(env.GROQ_API_KEY),
@@ -85,7 +97,7 @@ export interface ConfigStatus {
 
 /** What /api/health reports. Never includes a key or URL. */
 export function configStatus(config: ServiceConfig): ConfigStatus {
-  const chatProviders = [config.openrouterKey, config.hfKey, config.groqKey, config.gateway].filter(Boolean).length;
+  const chatProviders = [config.engine, config.openrouterKey, config.hfKey, config.groqKey, config.gateway].filter(Boolean).length;
   return {
     ok: chatProviders > 0,
     chatProviders,

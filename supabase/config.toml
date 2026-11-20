@@ -3,3 +3,7 @@
 # verify_jwt back on without this, and every store call then fails with 401.
 [functions.shikhbo-api]
 verify_jwt = false
+
+# peace-api is a public, rate-limited search; it has no Supabase JWT to check.
+[functions.peace-api]
+verify_jwt = false
