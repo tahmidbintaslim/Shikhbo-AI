@@ -18,7 +18,7 @@ Screenshot from a local production build (`npm run build && npm start`), 1280 x 
 
 - Ask a question in a chat box. Pick the class (1 to 12) and the medium (Bangla or English). The page, chat box included, switches between Bangla (the default) and English.
 - Textbook lookup (RAG): the question is matched against OCR'd pages of NCTB textbooks stored in Supabase Postgres with pgvector, filtered by class and medium, and the best pages go to the model as context.
-- Five chat providers tried in order: the free `bangla-ai-engine` Worker (Cloudflare Workers AI, Llama 3.3 70B, see `engine/`), Groq, OpenRouter, Hugging Face Inference Providers, then the paid Vercel AI Gateway under a daily cap. One provider being down or out of free quota does not stop answers.
+- Five chat providers tried in order: the free `bangla-ai-engine` Worker (Cloudflare Workers AI, Mistral Small 3.1 24B, see `engine/`), Groq, OpenRouter, Hugging Face Inference Providers, then the paid Vercel AI Gateway under a daily cap. One provider being down or out of free quota does not stop answers.
 - Answers render as Markdown (headings, numbered and bulleted lists, code) with KaTeX math. The conversation stays in the browser and can be exported as a text file.
 - Per-IP rate limit and a 5-minute answer cache, both in Supabase (in memory for local work without it).
 - Clear failures: with no provider key the API answers `503` with `code: "not_configured"` and the chat says the tutor is not set up; a store URL that is not a plain `https://` URL turns the store off (and `/api/health` reports it) and logs which variable to fix.

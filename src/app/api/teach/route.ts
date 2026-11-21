@@ -120,7 +120,7 @@ async function generateAnswer(system: string, messages: ChatTurn[]): Promise<str
     const providers: Array<{ name: string; run: () => Promise<string | null | undefined> }> = [];
 
     if (config.engine) {
-        // Free Cloudflare Workers AI (Llama 3.3 70B) behind the bangla-ai-engine Worker; first, since it costs nothing.
+        // Free Cloudflare Workers AI (Mistral Small 3.1 24B) behind the bangla-ai-engine Worker; first, since it costs nothing.
         const engine = config.engine;
         providers.push({ name: "engine", run: () => engineChat(engine, system, messages) });
     }

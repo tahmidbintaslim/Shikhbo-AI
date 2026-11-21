@@ -2,9 +2,11 @@
 // Runs on Cloudflare Workers AI through the AI binding, so no API token is
 // stored anywhere. Callers send `Authorization: Bearer <ENGINE_SECRET>`.
 //   POST /embed { texts: string[] }                       -> { model, vectors: number[][] }  (bge-m3, 1024 dims, multilingual)
-//   POST /chat  { system, messages, max_tokens? }          -> { model, text }
+//   POST /chat  { system, messages, max_tokens? }          -> { model, text }  (Mistral Small 3.1 24B)
 const EMBED_MODEL = "@cf/baai/bge-m3";
-const CHAT_MODEL = "@cf/meta/llama-3.3-70b-instruct-fp8-fast";
+// Mistral Small costs about 9 neurons an answer; Llama 3.3 70B cost about 143,
+// which spent the 10,000-neuron free day in about 70 answers.
+const CHAT_MODEL = "@cf/mistralai/mistral-small-3.1-24b-instruct";
 const MAX_TEXTS = 100;
 const MAX_CHARS = 8000;
 
@@ -54,7 +56,7 @@ export default {
           messages: [{ role: "system", content: body.system }, ...msgs],
           max_tokens: maxTokens,
         });
-        return json({ model: CHAT_MODEL, text: String(r.response ?? "") });
+        return json({ model: CHAT_MODEL, text: String(r.response ?? r.choices?.[0]?.message?.content ?? "") });
       }
       return json({ error: "unknown path" }, 404);
     } catch (err) {
