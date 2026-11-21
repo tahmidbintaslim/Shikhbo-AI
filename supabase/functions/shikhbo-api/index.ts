@@ -90,6 +90,12 @@ async function embedM3(texts: string[]): Promise<string[]> {
   return ((await res.json()).vectors as number[][]).map((v) => `[${v.join(",")}]`);
 }
 
+/** The free model quota can run out for the day; searches then use shared words only. */
+function wordsOnly(err: unknown): null {
+  console.warn("[shikhbo-api] embedding unavailable, word search only:", err instanceof Error ? err.message : err);
+  return null;
+}
+
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "POST only" }, 405);
 
@@ -115,12 +121,18 @@ Deno.serve(async (req) => {
     switch (body.op) {
       case "match": {
         const query = str(body.query, "query", 2_000);
-        const [vector] = await embedM3([query]);
-        // Meaning (bge-m3) and shared words fused.
-        const rows = await sql`
-          select source, text, similarity
-          from shikhbo.match_pages_m3(${vector}::extensions.vector, ${query}, ${int(body.grade, "grade", 1, 12)},
-            ${medium(body.medium)}, ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
+        const grade = int(body.grade, "grade", 1, 12);
+        const med = medium(body.medium);
+        const count = body.count === undefined ? 5 : int(body.count, "count", 1, 20);
+        const vector = await embedM3([query]).then(([v]) => v, wordsOnly);
+        // Meaning (bge-m3) and shared words fused; shared words alone when the engine is out.
+        const rows = vector
+          ? await sql`select source, text, similarity
+              from shikhbo.match_pages_m3(${vector}::extensions.vector, ${query}, ${grade}, ${med}, ${count})`
+          : await sql`select p.source, p.text, 0::float as similarity
+              from shikhbo.textbook_pages p, shikhbo.any_words(${query}) q
+              where p.grade = ${grade} and p.medium = ${med} and to_tsvector('simple', p.text) @@ q
+              order by ts_rank_cd(to_tsvector('simple', p.text), q, 2) desc limit ${count}`;
         return json({ matches: rows });
       }
       case "cache_get": {
@@ -168,12 +180,16 @@ Deno.serve(async (req) => {
         const centre = slug(body.centre);
         await sql`select shikhbo.check_centre_code(${centre}, ${code(body.code)}, false)`;
         const query = str(body.query, "query", 2_000);
-        const [vector] = await embedM3([query]);
+        const count = body.count === undefined ? 5 : int(body.count, "count", 1, 20);
+        const vector = await embedM3([query]).then(([v]) => v, wordsOnly);
         const [info] = await sql`select name from shikhbo.centres where slug = ${centre}`;
-        const rows = await sql`
-          select source, text, similarity
-          from shikhbo.match_centre_notes_m3(${centre}, ${vector}::extensions.vector, ${query},
-            ${body.count === undefined ? 5 : int(body.count, "count", 1, 20)})`;
+        const rows = vector
+          ? await sql`select source, text, similarity
+              from shikhbo.match_centre_notes_m3(${centre}, ${vector}::extensions.vector, ${query}, ${count})`
+          : await sql`select n.title || ', part ' || n.part as source, n.text, 0::float as similarity
+              from shikhbo.centre_notes n, shikhbo.any_words(${query}) q
+              where n.centre = ${centre} and to_tsvector('simple', n.text) @@ q
+              order by ts_rank_cd(to_tsvector('simple', n.text), q, 2) desc limit ${count}`;
         return json({ name: info?.name ?? centre, matches: rows });
       }
       case "centre_log": {

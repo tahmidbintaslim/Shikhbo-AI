@@ -156,8 +156,20 @@ Deno.serve(async (req) => {
     if (!(await allowed(`peace:ip:${await hashed(ip)}`, PER_MINUTE, 60))) return json({ error: "rate_limited" }, 429);
     if (!(await allowed("peace:daily", PER_DAY, 86_400))) return json({ error: "daily_limit" }, 429);
 
-    const [q] = await embed([query]);
-    const ids = await sql`select id, kind, similarity from peace.search(${vec(q)}::extensions.vector, ${query}, ${kinds}::text[], ${limit})`;
+    let ids;
+    try {
+      const [q] = await embed([query]);
+      ids = await sql`select id, kind, similarity from peace.search(${vec(q)}::extensions.vector, ${query}, ${kinds}::text[], ${limit})`;
+    } catch (err) {
+      // The free model quota can run out for the day: fall back to shared-word
+      // search so the API keeps answering (worse for Bangla questions).
+      console.warn("[peace-api] embedding unavailable, word search only:", err instanceof Error ? err.message : err);
+      ids = await sql`
+        select p.id, p.kind, 0::float as similarity
+        from peace.passages p, shikhbo.any_words(${query}) q
+        where p.kind = any(${kinds}::text[]) and to_tsvector('simple', p.search_text) @@ q
+        order by ts_rank_cd(to_tsvector('simple', p.search_text), q, 2) desc limit ${limit}`;
+    }
     return json({ matches: await details(ids), notice: NOTICE });
   } catch (error) {
     console.error("[peace-api]", error instanceof Error ? error.message : error);
