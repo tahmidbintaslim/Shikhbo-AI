@@ -1,0 +1,27 @@
+{
+  "about": "Search-quality checks. textbook: the expected book (file name part) must be among the top 3 pages. peace: one of the expected references must be among the top 5. Book-level checks are coarse; add page numbers once the Bangla OCR is redone.",
+  "textbook": [
+    { "q": "বাংলা বর্ণমালায় কয়টি স্বরবর্ণ আছে?", "grade": 1, "medium": "bengali", "book": "Bangla" },
+    { "q": "অ আ ই ঈ কীভাবে লিখব?", "grade": 1, "medium": "bengali", "book": "Bangla" },
+    { "q": "আমার সোনার বাংলা কবিতা", "grade": 1, "medium": "bengali", "book": "Bangla" },
+    { "q": "৩ আর ২ যোগ করলে কত হয়?", "grade": 1, "medium": "bengali", "book": "Math" },
+    { "q": "১ থেকে ১০ পর্যন্ত গণনা", "grade": 1, "medium": "bengali", "book": "Math" },
+    { "q": "বিয়োগ কাকে বলে?", "grade": 1, "medium": "bengali", "book": "Math" },
+    { "q": "How do I add two numbers?", "grade": 1, "medium": "english", "book": "math" },
+    { "q": "Count from one to ten", "grade": 1, "medium": "english", "book": "math" },
+    { "q": "What sound does the letter A make?", "grade": 1, "medium": "english", "book": "English" },
+    { "q": "How do we greet a friend in English?", "grade": 1, "medium": "english", "book": "English" }
+  ],
+  "peace": [
+    { "q": "How do I stay patient when I am sick?", "kinds": ["quran"], "any": ["2:153", "2:155", "2:156", "2:45", "3:200", "39:10", "94:5", "94:6"] },
+    { "q": "মায়ের সাথে কেমন ব্যবহার করা উচিত?", "kinds": ["quran"], "any": ["17:23", "17:24", "31:14", "46:15", "29:8"] },
+    { "q": "Allah forgives all sins, do not despair", "kinds": ["quran"], "any": ["39:53"] },
+    { "q": "নামাজ কায়েম করো এবং যাকাত দাও", "kinds": ["quran"], "any": ["2:43", "2:110", "2:83", "24:56", "22:78", "4:77", "58:13", "73:20", "98:5", "9:71", "5:55"] },
+    { "q": "with hardship comes ease", "kinds": ["quran"], "any": ["94:5", "94:6", "65:7"] },
+    { "q": "fasting is prescribed for you as it was for those before you", "kinds": ["quran"], "any": ["2:183"] },
+    { "q": "actions are judged by intentions", "kinds": ["hadith"], "anyText": ["intention"] },
+    { "q": "রোজা রাখার ফজিলত", "kinds": ["hadith"], "anyText": ["fast"] },
+    { "q": "kindness to neighbours", "kinds": ["hadith"], "anyText": ["neighbo"] },
+    { "q": "ওযু করার নিয়ম", "kinds": ["hadith"], "anyText": ["ablution", "wudu"] }
+  ]
+}

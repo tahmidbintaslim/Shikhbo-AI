@@ -6,7 +6,7 @@ import { allowGatewayAnswer, createRateLimiter } from "../src/lib/rate-limit";
 describe("service config", () => {
     test("no env vars means no chat provider and no retrieval", () => {
         const config = readServiceConfig({});
-        expect(config).toEqual({ openrouterKey: null, hfKey: null, groqKey: null, gateway: false, store: null, problems: [] });
+        expect(config).toEqual({ engine: null, openrouterKey: null, hfKey: null, groqKey: null, gateway: false, store: null, problems: [] });
         expect(configStatus(config)).toEqual({ ok: false, chatProviders: 0, textbookRetrieval: false });
     });
 
