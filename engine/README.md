@@ -5,7 +5,7 @@ Cloudflare Workers AI (free tier: 10,000 "neurons" a day):
 
 - `POST /embed { texts }` → `bge-m3` vectors (1024 dimensions, multilingual: a
   Bangla question and its English translation score about 0.85).
-- `POST /chat { system, messages, max_tokens? }` → Llama 3.3 70B (fast, fp8).
+- `POST /chat { system, messages, max_tokens? }` → Mistral Small 3.1 24B (about 9 neurons an answer; Llama 3.3 70B cost about 143).
 
 Every call needs `Authorization: Bearer <ENGINE_SECRET>`. The Worker uses its
 own Workers AI binding, so no Cloudflare API token is stored anywhere.
